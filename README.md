@@ -2,6 +2,15 @@
 
 Astro static site configured for Vercel's free deployment flow.
 
+## Node Version
+
+This project targets Node 24. If you use `nvm`, run:
+
+```sh
+nvm install
+nvm use
+```
+
 ## Commands
 
 | Command                | Action                                            |
