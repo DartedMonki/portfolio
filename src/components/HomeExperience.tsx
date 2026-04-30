@@ -193,7 +193,16 @@ const HomeExperience = ({ locale }: HomeExperienceProps) => {
         onClose={closeAboutDialog}
       />
 
-      <main>
+      <TerrainBackground
+        onLoad={() => setIsTerrainLoaded(true)}
+        settingsOpen={settingsOpen}
+        onSettingsOpenChange={setSettingsOpen}
+        onToast={showToast}
+        aria-label="Interactive 3D terrain background"
+        aria-hidden={!isTerrainLoaded}
+      />
+
+      <main className="relative z-10">
         <ScrollToTop />
         <div
           ref={typedTextRef}
@@ -204,7 +213,7 @@ const HomeExperience = ({ locale }: HomeExperienceProps) => {
           {typedWord.length > 0 ? `${copy.home.you}${typedWord}` : ''}
         </div>
 
-        <section className="relative z-0 flex min-h-screen flex-col items-center justify-center overflow-hidden bg-black">
+        <section className="relative flex min-h-screen flex-col items-center justify-center overflow-hidden">
           <div className="pointer-events-none absolute top-4 right-4 z-20 flex items-center rounded bg-black/50 px-2 py-1 text-sm font-medium text-white">
             Built with Three.js
           </div>
@@ -220,15 +229,6 @@ const HomeExperience = ({ locale }: HomeExperienceProps) => {
           >
             <Settings aria-hidden="true" className="h-6 w-6" strokeWidth={2} />
           </button>
-
-          <TerrainBackground
-            onLoad={() => setIsTerrainLoaded(true)}
-            settingsOpen={settingsOpen}
-            onSettingsOpenChange={setSettingsOpen}
-            onToast={showToast}
-            aria-label="Interactive 3D terrain background"
-            aria-hidden={!isTerrainLoaded}
-          />
 
           <p className="sr-only">
             This page features an interactive 3D wireframe terrain background created with Three.js. The content below is the

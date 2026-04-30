@@ -877,7 +877,7 @@ const TerrainBackground = ({
     <>
       <section
         ref={containerRef}
-        className="pointer-events-none absolute inset-0 z-0 h-full w-full"
+        className="pointer-events-none fixed inset-0 z-0 h-dvh w-dvw"
         aria-label={ariaLabel}
         aria-hidden={ariaHidden}
       >
