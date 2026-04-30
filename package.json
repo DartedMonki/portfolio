@@ -23,6 +23,7 @@
     "@fontsource/didact-gothic": "^5.2.7",
     "@tailwindcss/vite": "^4.2.4",
     "astro": "^6.1.10",
+    "lucide-react": "^1.14.0",
     "react": "^19.2.5",
     "react-dom": "^19.2.5",
     "swiper": "^12.1.4",
@@ -30,6 +31,7 @@
     "three": "^0.184.0"
   },
   "overrides": {
+    "path-to-regexp": "6.3.0",
     "yaml": "2.8.3"
   },
   "devDependencies": {

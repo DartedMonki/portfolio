@@ -862,18 +862,22 @@ const TerrainBackground = ({
     [onSettingsOpenChange]
   );
 
-  const handleSettingsKeyDown = useCallback(
-    (event: React.KeyboardEvent) => {
+  useEffect(() => {
+    if (!localSettingsOpen) return undefined;
+
+    const handleSettingsKeyDown = (event: KeyboardEvent) => {
       if (event.key === 'Escape') handleSettingsOpenChange(false);
-    },
-    [handleSettingsOpenChange]
-  );
+    };
+
+    document.addEventListener('keydown', handleSettingsKeyDown);
+    return () => document.removeEventListener('keydown', handleSettingsKeyDown);
+  }, [handleSettingsOpenChange, localSettingsOpen]);
 
   return (
     <>
       <section
         ref={containerRef}
-        className="pointer-events-none fixed inset-0 z-0 h-full w-full"
+        className="pointer-events-none absolute inset-0 z-0 h-full w-full"
         aria-label={ariaLabel}
         aria-hidden={ariaHidden}
       >
@@ -887,7 +891,6 @@ const TerrainBackground = ({
         open
         className="fixed inset-0 z-40 m-0 h-dvh max-h-none w-dvw max-w-none border-0 bg-transparent p-0 text-white"
         aria-labelledby="terrain-settings-title"
-        onKeyDown={handleSettingsKeyDown}
       >
         <button
           className="absolute inset-0 bg-black/40"

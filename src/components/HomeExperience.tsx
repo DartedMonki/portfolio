@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
+import { Settings } from 'lucide-react';
 
 import { AVATAR_URL, GITHUB_URL, LINKEDIN_URL } from '../data/constants';
 import { locales } from '../data/locales';
@@ -217,14 +218,7 @@ const HomeExperience = ({ locale }: HomeExperienceProps) => {
             id="terrain-settings-button"
             onClick={() => setSettingsOpen(true)}
           >
-            <svg aria-hidden="true" className="h-6 w-6" viewBox="0 0 24 24" fill="none">
-              <path
-                d="M12 8a4 4 0 1 1 0 8 4 4 0 0 1 0-8Zm8.94 3.06-1.83-.31a7.78 7.78 0 0 0-.74-1.79l1.08-1.51-2.9-2.9-1.51 1.08c-.56-.31-1.16-.56-1.79-.74L12.94 3h-4l-.31 1.89c-.63.18-1.23.43-1.79.74L5.33 4.55l-2.9 2.9 1.08 1.51c-.31.56-.56 1.16-.74 1.79l-1.83.31v4l1.83.31c.18.63.43 1.23.74 1.79l-1.08 1.51 2.9 2.9 1.51-1.08c.56.31 1.16.56 1.79.74l.31 1.83h4l.31-1.83c.63-.18 1.23-.43 1.79-.74l1.51 1.08 2.9-2.9-1.08-1.51c.31-.56.56-1.16.74-1.79l1.83-.31v-4Z"
-                stroke="currentColor"
-                strokeLinejoin="round"
-                strokeWidth="1.5"
-              />
-            </svg>
+            <Settings aria-hidden="true" className="h-6 w-6" strokeWidth={2} />
           </button>
 
           <TerrainBackground
