@@ -168,7 +168,7 @@ const HomeExperience = ({ locale }: HomeExperienceProps) => {
     <>
       {isTerrainLoaded ? null : (
         <progress
-          className="fixed top-0 left-0 z-[9999] h-1 w-full appearance-none bg-transparent [&::-moz-progress-bar]:bg-[#304FFE] [&::-webkit-progress-bar]:bg-transparent [&::-webkit-progress-value]:bg-[#304FFE]"
+          className="fixed top-0 left-0 z-9999 h-1 w-full appearance-none bg-transparent [&::-moz-progress-bar]:bg-[#304FFE] [&::-webkit-progress-bar]:bg-transparent [&::-webkit-progress-value]:bg-[#304FFE]"
           aria-label="Loading terrain"
           value={loadingProgress}
           max={100}
@@ -177,7 +177,7 @@ const HomeExperience = ({ locale }: HomeExperienceProps) => {
 
       <a
         href="#portfolio-section"
-        className="absolute -top-14 left-0 z-[1000] bg-[#304FFE] px-4 py-2 text-white no-underline focus:top-0"
+        className="absolute -top-14 left-0 z-1000 bg-[#304FFE] px-4 py-2 text-white no-underline focus:top-0"
         onClick={(event) => {
           event.preventDefault();
           skipToContent();
@@ -197,7 +197,7 @@ const HomeExperience = ({ locale }: HomeExperienceProps) => {
         <ScrollToTop />
         <div
           ref={typedTextRef}
-          className={`fixed z-[99] whitespace-nowrap text-red-600 ${typedWord.length > 0 ? 'block' : 'hidden'}`}
+          className={`fixed z-99 whitespace-nowrap text-red-600 ${typedWord.length > 0 ? 'block' : 'hidden'}`}
           role="status"
           aria-live="polite"
         >

@@ -881,7 +881,7 @@ const TerrainBackground = ({
         aria-label={ariaLabel}
         aria-hidden={ariaHidden}
       >
-        {isInitialized ? null : <div className="absolute inset-0 z-[1] bg-black" aria-label="Loading terrain background" />}
+        {isInitialized ? null : <div className="absolute inset-0 z-1 bg-black" aria-label="Loading terrain background" />}
         <div className="pointer-events-none absolute inset-0 bg-black/40" aria-hidden="true" />
       </section>
 
@@ -899,7 +899,7 @@ const TerrainBackground = ({
           onClick={() => handleSettingsOpenChange(false)}
         />
         <section
-          className="absolute top-0 left-0 h-full w-4/5 max-w-[350px] overflow-y-auto bg-black/95 p-6 text-white shadow-2xl transition-transform duration-300 sm:w-[350px]"
+          className="absolute top-0 left-0 h-full w-4/5 max-w-87.5 overflow-y-auto bg-black/95 p-6 text-white shadow-2xl transition-transform duration-300 sm:w-87.5"
           aria-labelledby="terrain-settings-title"
         >
           <div className="mb-6 flex items-center justify-between gap-4">
@@ -924,7 +924,7 @@ const TerrainBackground = ({
               {(Object.keys(QUALITY_PRESETS) as QualityKey[]).map((preset) => (
                 <button
                   key={preset}
-                  className={`min-w-0 flex-1 rounded border border-white/30 px-3 py-2 text-sm capitalize transition ${
+                  className={`min-w-0 flex-1 rounded border border-white/30 px-3 py-2 capitalize transition text-sm ${
                     currentQuality === preset ? 'bg-[#304FFE] text-white' : 'bg-transparent text-white hover:bg-white/10'
                   }`}
                   type="button"

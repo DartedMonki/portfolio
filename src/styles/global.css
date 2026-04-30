@@ -13,10 +13,12 @@ body {
   background: #000;
 }
 
-button,
-a,
-input {
-  font: inherit;
+@layer base {
+  button,
+  a,
+  input {
+    font: inherit;
+  }
 }
 
 .swiper {
