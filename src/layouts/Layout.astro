@@ -1,23 +1,61 @@
+---
+import '../styles/global.css';
+
+import { AVATAR_URL, SEO_DEFAULTS, SITE_URL } from '../data/constants';
+
+interface Props {
+  lang?: 'en' | 'id';
+  path?: string;
+  title?: string;
+  description?: string;
+}
+
+const {
+  lang = 'en',
+  path = Astro.url.pathname,
+  title = SEO_DEFAULTS.title,
+  description = SEO_DEFAULTS.description,
+} = Astro.props;
+const canonicalPath = path === '/id' ? '/id/' : path;
+const canonicalUrl = new URL(canonicalPath, SITE_URL).toString();
+---
+
 <!doctype html>
-<html lang="en">
+<html lang={lang}>
   <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width" />
-    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
-    <link rel="icon" href="/favicon.ico" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
     <meta name="generator" content={Astro.generator} />
-    <title>Astro Basics</title>
+    <meta name="description" content={description} />
+    <meta name="robots" content="index, follow" />
+    <meta name="author" content={SEO_DEFAULTS.author} />
+    <meta name="theme-color" content={SEO_DEFAULTS.themeColor} />
+    <link rel="canonical" href={canonicalUrl} />
+    <link rel="preconnect" href="https://avatars.githubusercontent.com" />
+
+    <meta property="og:url" content={canonicalUrl} />
+    <meta property="og:type" content={SEO_DEFAULTS.openGraphType} />
+    <meta property="og:title" content={title} />
+    <meta property="og:description" content={description} />
+    <meta property="og:image" content={AVATAR_URL} />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta property="og:site_name" content={SEO_DEFAULTS.siteName} />
+
+    <meta name="twitter:card" content={SEO_DEFAULTS.twitterCard} />
+    <meta name="twitter:title" content={title} />
+    <meta name="twitter:description" content={description} />
+    <meta name="twitter:image" content={AVATAR_URL} />
+
+    <link rel="shortcut icon" href="/images/favicon.ico" />
+    <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon.png" />
+    <link rel="icon" type="image/png" sizes="512x512" href="/images/android-chrome-512x512.png" />
+    <link rel="icon" type="image/png" sizes="192x192" href="/images/android-chrome-192x192.png" />
+    <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32.png" />
+    <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16.png" />
+    <title>{title}</title>
   </head>
   <body>
     <slot />
   </body>
 </html>
-
-<style>
-  html,
-  body {
-    margin: 0;
-    width: 100%;
-    height: 100%;
-  }
-</style>

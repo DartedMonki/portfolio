@@ -8,7 +8,7 @@ import tseslint from 'typescript-eslint';
 
 export default defineConfig(
   {
-    ignores: ['.astro/', 'dist/', 'node_modules/'],
+    ignores: ['.astro/', '.vercel/', 'dist/', 'node_modules/'],
   },
   {
     languageOptions: {
