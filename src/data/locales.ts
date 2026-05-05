@@ -14,7 +14,10 @@ export interface LocaleCopy {
     closeLabel: string;
   };
   alert: {
-    mouseMessage: string;
+    messageSending: string;
+    messageSent: string;
+    messageReceived: string;
+    messageFailed: string;
   };
   home: {
     you: string;
@@ -36,12 +39,15 @@ My tech stack includes React.js, Next.js, Vue.js for frontend development, and S
     hint: {
       title: 'Typing shortcut',
       content:
-        'You can type directly anywhere on this site. Press Enter when you are done and your message will be sent to me.',
+        'You can type directly anywhere on this site. Press Enter when you are done and your message, including your IP address, will be sent to me.',
       triggerLabel: 'Show typing shortcut hint',
       closeLabel: 'Close typing shortcut hint',
     },
     alert: {
-      mouseMessage: 'Your message with IP address: {ipAddress} has been recorded.',
+      messageSending: 'Sending your message...',
+      messageSent: 'Your message was sent.',
+      messageReceived: 'Your message was received.',
+      messageFailed: 'Could not send your message. Please try again.',
     },
     home: {
       you: 'You: ',
@@ -61,12 +67,15 @@ Stack yang sering saya gunakan meliputi React.js, Next.js, dan Vue.js untuk fron
     hint: {
       title: 'Shortcut mengetik',
       content:
-        'Anda bisa langsung mengetik di mana saja pada situs ini. Tekan Enter setelah selesai, lalu pesan Anda akan dikirimkan kepada saya.',
+        'Anda bisa langsung mengetik di mana saja pada situs ini. Tekan Enter setelah selesai, lalu pesan Anda beserta IP address akan dikirimkan kepada saya.',
       triggerLabel: 'Tampilkan petunjuk shortcut mengetik',
       closeLabel: 'Tutup petunjuk shortcut mengetik',
     },
     alert: {
-      mouseMessage: 'Pesan Anda dengan IP address: {ipAddress} telah disimpan.',
+      messageSending: 'Mengirim pesan Anda...',
+      messageSent: 'Pesan Anda telah dikirim.',
+      messageReceived: 'Pesan Anda telah diterima.',
+      messageFailed: 'Pesan Anda belum bisa dikirim. Silakan coba lagi.',
     },
     home: {
       you: 'Anda: ',

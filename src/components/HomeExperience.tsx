@@ -22,8 +22,6 @@ const commandUrlMap = {
   linkedin: LINKEDIN_URL,
 } as const;
 
-const LOCAL_HOSTS = new Set(['localhost', '127.0.0.1', '::1']);
-
 const getYearsOfExperience = () => {
   const startWorkDate = new Date('2020-11-09T00:00:00');
   const diffMs = Date.now() - startWorkDate.getTime();
@@ -39,27 +37,6 @@ const isTextEntryTarget = (target: EventTarget | null) => {
   if (['input', 'textarea', 'select'].includes(tagName) || target.isContentEditable) return true;
 
   return Boolean(target.closest('[contenteditable="true"]'));
-};
-
-const getLocalIpFallback = () =>
-  LOCAL_HOSTS.has(globalThis.location.hostname) ? 'localhost' : 'unknown';
-
-const getVisitorIpAddress = async () => {
-  try {
-    const response = await fetch('/api/ip');
-
-    if (response.ok) {
-      const data = (await response.json()) as { ipAddress?: string };
-      const ipAddress = data.ipAddress;
-
-      if (ipAddress === 'unknown') return getLocalIpFallback();
-      if (ipAddress) return ipAddress;
-    }
-
-    return getLocalIpFallback();
-  } catch {
-    return getLocalIpFallback();
-  }
 };
 
 const TerrainFallback = () => (
@@ -82,6 +59,7 @@ const HomeExperience = ({ locale }: HomeExperienceProps) => {
   const typedWordRef = useRef('');
   const typedTextRef = useRef<HTMLDivElement>(null);
   const portfolioSectionRef = useRef<HTMLDivElement>(null);
+  const isSubmittingMessageRef = useRef(false);
 
   const showToast = useCallback((message: string, variant: ToastState['variant'] = 'success') => {
     setToast({ id: Date.now(), message, variant });
@@ -109,6 +87,47 @@ const HomeExperience = ({ locale }: HomeExperienceProps) => {
     resetTypedWord();
     setOpenHintDialog(true);
   }, [resetTypedWord]);
+
+  const submitTypedMessage = useCallback(
+    async (message: string) => {
+      if (isSubmittingMessageRef.current) {
+        showToast(copy.alert.messageSending, 'info');
+        return;
+      }
+
+      isSubmittingMessageRef.current = true;
+      showToast(copy.alert.messageSending, 'info');
+
+      try {
+        const response = await fetch('/api/message', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ message }),
+        });
+
+        if (!response.ok) {
+          throw new Error(`Message request failed with ${response.status}`);
+        }
+
+        const data = (await response.json()) as { deliveryStatus?: 'delivered' | 'logged' };
+        showToast(
+          data.deliveryStatus === 'logged' ? copy.alert.messageReceived : copy.alert.messageSent,
+          'success',
+        );
+      } catch {
+        showToast(copy.alert.messageFailed, 'error');
+      } finally {
+        isSubmittingMessageRef.current = false;
+      }
+    },
+    [
+      copy.alert.messageFailed,
+      copy.alert.messageReceived,
+      copy.alert.messageSending,
+      copy.alert.messageSent,
+      showToast,
+    ],
+  );
 
   useEffect(() => {
     if (isTerrainLoaded) {
@@ -138,18 +157,13 @@ const HomeExperience = ({ locale }: HomeExperienceProps) => {
     };
 
     const handleKeyDown = (event: KeyboardEvent) => {
-      if (openAboutDialog || openHintDialog || settingsOpen || isTextEntryTarget(event.target)) return;
+      if (openAboutDialog || openHintDialog || settingsOpen || isTextEntryTarget(event.target))
+        return;
       if (event.altKey || event.ctrlKey || event.metaKey) return;
 
-      if (/^[a-z]$/i.test(event.key)) {
-        typedWordRef.current += event.key.toLowerCase();
-        setTypedWord(typedWordRef.current);
-        return;
-      }
-
-      if (event.key === ' ' && typedWordRef.current.length > 0) {
+      if (event.key.length === 1) {
         event.preventDefault();
-        typedWordRef.current += ' ';
+        typedWordRef.current += event.key;
         setTypedWord(typedWordRef.current);
         return;
       }
@@ -170,7 +184,13 @@ const HomeExperience = ({ locale }: HomeExperienceProps) => {
       if (event.key !== 'Enter' || typedWordRef.current.length === 0) return;
       event.preventDefault();
 
-      const typedCommand = typedWordRef.current;
+      const typedMessage = typedWordRef.current.trim();
+      if (typedMessage.length === 0) {
+        resetTypedWord();
+        return;
+      }
+
+      const typedCommand = typedMessage.toLowerCase();
       const url = commandUrlMap[typedCommand as keyof typeof commandUrlMap];
       resetTypedWord();
 
@@ -179,9 +199,7 @@ const HomeExperience = ({ locale }: HomeExperienceProps) => {
         return;
       }
 
-      getVisitorIpAddress().then((ipAddress) => {
-        showToast(copy.alert.mouseMessage.replace('{ipAddress}', ipAddress), 'success');
-      });
+      void submitTypedMessage(typedMessage);
     };
 
     document.addEventListener('mousemove', handleMouseMove);
@@ -191,7 +209,7 @@ const HomeExperience = ({ locale }: HomeExperienceProps) => {
       document.removeEventListener('mousemove', handleMouseMove);
       document.removeEventListener('keydown', handleKeyDown);
     };
-  }, [copy.alert.mouseMessage, openAboutDialog, openHintDialog, resetTypedWord, settingsOpen, showToast]);
+  }, [openAboutDialog, openHintDialog, resetTypedWord, settingsOpen, submitTypedMessage]);
 
   const yearsOfExperience = getYearsOfExperience();
   const contentParagraphs = copy.about.content.replace('{years}', yearsOfExperience).split('\n\n');
