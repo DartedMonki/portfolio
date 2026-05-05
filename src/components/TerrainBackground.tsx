@@ -4,6 +4,7 @@ import * as THREE from 'three';
 import type { ToastState } from './Toast';
 
 const TERRAIN_PREFERENCES_KEY = 'terrain_preferences';
+const TERRAIN_HORIZONTAL_FRUSTUM_PADDING_CHUNKS = 1;
 
 interface TerrainConfig {
   chunkSize: number;
@@ -672,23 +673,51 @@ const TerrainBackground = ({
     const textureCache = new Map<string, THREE.Texture>();
     const loader = new THREE.TextureLoader();
     const getChunkKey = (x: number, z: number): string => `${x},${z}`;
+    let initialTerrainChunksTarget = terrainConfig.initialChunks;
+
+    const getTerrainChunkBounds = (position: THREE.Vector3) => {
+      const cameraChunkX = Math.floor(position.x / terrainConfig.chunkSize);
+      const cameraChunkZ = Math.floor(position.z / terrainConfig.chunkSize);
+      const leadX = Math.sign(terrainConfig.moveSpeed.x);
+      const leadZ = Math.sign(terrainConfig.moveSpeed.z);
+
+      return {
+        cameraChunkX,
+        cameraChunkZ,
+        leadX,
+        leadZ,
+        minX:
+          cameraChunkX - terrainConfig.renderDistance - TERRAIN_HORIZONTAL_FRUSTUM_PADDING_CHUNKS,
+        maxX:
+          cameraChunkX + terrainConfig.renderDistance + TERRAIN_HORIZONTAL_FRUSTUM_PADDING_CHUNKS,
+        minZ: cameraChunkZ - terrainConfig.renderDistance + Math.min(leadZ, 0),
+        maxZ: cameraChunkZ + terrainConfig.renderDistance + Math.max(leadZ, 0),
+      };
+    };
+
+    const sortTerrainChunkQueue = (
+      centerChunkX: number,
+      centerChunkZ: number,
+      leadX: number,
+      leadZ: number,
+    ) => {
+      const priorityChunkX = centerChunkX + leadX;
+      const priorityChunkZ = centerChunkZ + leadZ;
+
+      chunkGenerationQueue.current.sort(([leftX, leftZ], [rightX, rightZ]) => {
+        const leftDistance = (leftX - priorityChunkX) ** 2 + (leftZ - priorityChunkZ) ** 2;
+        const rightDistance = (rightX - priorityChunkX) ** 2 + (rightZ - priorityChunkZ) ** 2;
+        return leftDistance - rightDistance;
+      });
+    };
 
     const initializeChunkQueue = () => {
-      const cameraChunkX = Math.floor(camera.position.x / terrainConfig.chunkSize);
-      const cameraChunkZ = Math.floor(camera.position.z / terrainConfig.chunkSize);
+      const terrainChunkBounds = getTerrainChunkBounds(camera.position);
       chunkGenerationQueue.current = [];
       pendingChunks.clear();
 
-      for (
-        let x = cameraChunkX - terrainConfig.renderDistance;
-        x <= cameraChunkX + terrainConfig.renderDistance;
-        x += 1
-      ) {
-        for (
-          let z = cameraChunkZ - terrainConfig.renderDistance;
-          z <= cameraChunkZ + terrainConfig.renderDistance;
-          z += 1
-        ) {
+      for (let x = terrainChunkBounds.minX; x <= terrainChunkBounds.maxX; x += 1) {
+        for (let z = terrainChunkBounds.minZ; z <= terrainChunkBounds.maxZ; z += 1) {
           const chunkKey = getChunkKey(x, z);
           if (!terrainChunks.has(chunkKey)) {
             chunkGenerationQueue.current.push([x, z]);
@@ -696,6 +725,18 @@ const TerrainBackground = ({
           }
         }
       }
+
+      initialTerrainChunksTarget = Math.max(
+        terrainConfig.initialChunks,
+        chunkGenerationQueue.current.length,
+      );
+
+      sortTerrainChunkQueue(
+        terrainChunkBounds.cameraChunkX,
+        terrainChunkBounds.cameraChunkZ,
+        terrainChunkBounds.leadX,
+        terrainChunkBounds.leadZ,
+      );
     };
 
     const getTerrainChunk = (chunkX: number, chunkZ: number) => {
@@ -713,13 +754,15 @@ const TerrainBackground = ({
       const segmentsWithOverlap = terrainConfig.segments + 2 * terrainConfig.overlap + 1;
       const xFactor = terrainConfig.chunkSize / terrainConfig.segments;
       const zFactor = terrainConfig.chunkSize / terrainConfig.segments;
+      const chunkOriginX = chunkX * terrainConfig.chunkSize;
+      const chunkOriginZ = chunkZ * terrainConfig.chunkSize;
 
       for (let index = 0; index < positionsArray.length; index += 3) {
         const vertexIndex = index / 3;
         const x = vertexIndex % segmentsWithOverlap;
         const z = Math.floor(vertexIndex / segmentsWithOverlap);
-        const worldX = (x - terrainConfig.overlap) * xFactor + chunkX * terrainConfig.chunkSize;
-        const worldZ = (z - terrainConfig.overlap) * zFactor + chunkZ * terrainConfig.chunkSize;
+        const worldX = (x - terrainConfig.overlap) * xFactor + chunkOriginX;
+        const worldZ = (z - terrainConfig.overlap) * zFactor + chunkOriginZ;
         positionsArray[index + 2] =
           noiseGenerator.generateTerrainNoise(
             worldX * terrainConfig.noiseScale,
@@ -730,7 +773,12 @@ const TerrainBackground = ({
       geometry.attributes.position.needsUpdate = true;
       const chunk = new THREE.Mesh(geometry, terrainMaterial);
       chunk.rotation.x = -Math.PI / 2;
-      chunk.position.set(chunkX * terrainConfig.chunkSize, 0, chunkZ * terrainConfig.chunkSize);
+      // PlaneGeometry is centered, while chunkX/chunkZ represent the chunk origin.
+      chunk.position.set(
+        chunkOriginX + terrainConfig.chunkSize / 2,
+        0,
+        chunkOriginZ + terrainConfig.chunkSize / 2,
+      );
       scene.add(chunk);
       terrainChunks.set(chunkKey, chunk);
       generatedChunks.current += 1;
@@ -749,7 +797,7 @@ const TerrainBackground = ({
         if (nextChunk) getTerrainChunk(nextChunk[0], nextChunk[1]);
       }
 
-      if (!isInitializedRef.current && generatedChunks.current >= terrainConfig.initialChunks) {
+      if (!isInitializedRef.current && generatedChunks.current >= initialTerrainChunksTarget) {
         isInitializedRef.current = true;
         setIsInitialized(true);
         onLoadRef.current?.();
@@ -757,19 +805,10 @@ const TerrainBackground = ({
     };
 
     const updateVisibleChunks = () => {
-      const cameraChunkX = Math.floor(cameraTargetPosition.current.x / terrainConfig.chunkSize);
-      const cameraChunkZ = Math.floor(cameraTargetPosition.current.z / terrainConfig.chunkSize);
+      const terrainChunkBounds = getTerrainChunkBounds(cameraTargetPosition.current);
 
-      for (
-        let x = cameraChunkX - terrainConfig.renderDistance;
-        x <= cameraChunkX + terrainConfig.renderDistance;
-        x += 1
-      ) {
-        for (
-          let z = cameraChunkZ - terrainConfig.renderDistance;
-          z <= cameraChunkZ + terrainConfig.renderDistance;
-          z += 1
-        ) {
+      for (let x = terrainChunkBounds.minX; x <= terrainChunkBounds.maxX; x += 1) {
+        for (let z = terrainChunkBounds.minZ; z <= terrainChunkBounds.maxZ; z += 1) {
           const chunkKey = getChunkKey(x, z);
           const isQueued = chunkGenerationQueue.current.some(([cx, cz]) => cx === x && cz === z);
           if (!terrainChunks.has(chunkKey) && !isQueued && !pendingChunks.has(chunkKey)) {
@@ -779,11 +818,20 @@ const TerrainBackground = ({
         }
       }
 
+      sortTerrainChunkQueue(
+        terrainChunkBounds.cameraChunkX,
+        terrainChunkBounds.cameraChunkZ,
+        terrainChunkBounds.leadX,
+        terrainChunkBounds.leadZ,
+      );
+
       terrainChunks.forEach((chunk, key) => {
         const [chunkX, chunkZ] = key.split(',').map(Number);
         if (
-          Math.abs(chunkX - cameraChunkX) > terrainConfig.renderDistance ||
-          Math.abs(chunkZ - cameraChunkZ) > terrainConfig.renderDistance
+          chunkX < terrainChunkBounds.minX ||
+          chunkX > terrainChunkBounds.maxX ||
+          chunkZ < terrainChunkBounds.minZ ||
+          chunkZ > terrainChunkBounds.maxZ
         ) {
           scene.remove(chunk);
           terrainChunks.delete(key);
