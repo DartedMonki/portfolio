@@ -5,6 +5,13 @@ export interface LocaleCopy {
     title: string;
     content: string;
     avatar: string;
+    closeLabel: string;
+  };
+  hint: {
+    title: string;
+    content: string;
+    triggerLabel: string;
+    closeLabel: string;
   };
   alert: {
     mouseMessage: string;
@@ -24,6 +31,14 @@ Before Monee, I worked at Segari, a Series B-funded tech company in the online g
 
 My tech stack includes React.js, Next.js, Vue.js for frontend development, and Spring (Java), Go, Laravel for backend work. I also build mobile apps using Flutter and React Native, bringing my experience in both web and mobile development. I work with PostgreSQL for databases and have experience with tools like Redis for caching and Jenkins for deployment.  I enjoy solving technical challenges and am always excited to learn new technologies.`,
       avatar: 'Who am I?',
+      closeLabel: 'Close about dialog',
+    },
+    hint: {
+      title: 'Typing shortcut',
+      content:
+        'You can type directly anywhere on this site. Press Enter when you are done and your message will be sent to me.',
+      triggerLabel: 'Show typing shortcut hint',
+      closeLabel: 'Close typing shortcut hint',
     },
     alert: {
       mouseMessage: 'Your message with IP address: {ipAddress} has been recorded.',
@@ -41,6 +56,14 @@ Sebelum bergabung dengan Monee, saya bekerja di Segari, perusahaan teknologi Ser
 
 Stack yang sering saya gunakan meliputi React.js, Next.js, dan Vue.js untuk frontend; Spring (Java), Go, dan Laravel untuk backend. Saya juga membangun aplikasi mobile dengan Flutter dan React Native, sehingga terbiasa bekerja di ekosistem web maupun mobile. Untuk database, saya menggunakan PostgreSQL, dan saya juga berpengalaman dengan Redis untuk caching serta Jenkins untuk deployment. Saya senang memecahkan tantangan teknis dan selalu antusias mempelajari teknologi baru.`,
       avatar: 'Siapakah saya?',
+      closeLabel: 'Tutup dialog tentang saya',
+    },
+    hint: {
+      title: 'Shortcut mengetik',
+      content:
+        'Anda bisa langsung mengetik di mana saja pada situs ini. Tekan Enter setelah selesai, lalu pesan Anda akan dikirimkan kepada saya.',
+      triggerLabel: 'Tampilkan petunjuk shortcut mengetik',
+      closeLabel: 'Tutup petunjuk shortcut mengetik',
     },
     alert: {
       mouseMessage: 'Pesan Anda dengan IP address: {ipAddress} telah disimpan.',

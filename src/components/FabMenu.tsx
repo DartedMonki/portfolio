@@ -2,18 +2,33 @@ import { GITHUB_URL, LINKEDIN_URL } from '../data/constants';
 import type { Locale } from '../data/locales';
 
 interface FabMenuProps {
+  hintLabel: string;
+  hintOpen: boolean;
   locale: Locale;
+  onHintClick: () => void;
 }
 
-const fabClass =
-  'fixed bottom-[50px] z-30 flex h-14 w-14 items-center justify-center rounded-full bg-white text-black shadow-lg transition hover:opacity-90 focus:outline-none focus:ring-2 focus:ring-white focus:ring-offset-2 focus:ring-offset-black';
+const fabBaseClass =
+  'fixed bottom-[50px] z-30 h-14 w-14 items-center justify-center rounded-full bg-white text-black shadow-lg transition hover:opacity-90 focus:outline-none focus:ring-2 focus:ring-white focus:ring-offset-2 focus:ring-offset-black';
+const fabClass = `${fabBaseClass} flex`;
+const desktopFabClass = `${fabBaseClass} hidden md:flex`;
 
-const FabMenu = ({ locale }: FabMenuProps) => {
+const FabMenu = ({ hintLabel, hintOpen, locale, onHintClick }: FabMenuProps) => {
   const nextLocalePath = locale === 'en' ? '/id/' : '/';
   const nextLocale = locale === 'en' ? 'id' : 'en';
 
   return (
     <>
+      <button
+        className={`${desktopFabClass} right-77.5`}
+        type="button"
+        aria-label={hintLabel}
+        aria-haspopup="dialog"
+        aria-expanded={hintOpen}
+        onClick={onHintClick}
+      >
+        ?
+      </button>
       <a
         className={`${fabClass} right-45 sm:right-60`}
         href={nextLocalePath}

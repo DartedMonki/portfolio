@@ -4,8 +4,8 @@ import { Settings } from 'lucide-react';
 import { AVATAR_URL, GITHUB_URL, LINKEDIN_URL } from '../data/constants';
 import { locales } from '../data/locales';
 import type { Locale } from '../data/locales';
-import AboutDialog from './AboutDialog';
 import FabMenu from './FabMenu';
+import InfoDialog from './InfoDialog';
 import PortfolioSection from './PortfolioSection';
 import ScrollToTop from './ScrollToTop';
 import Toast from './Toast';
@@ -32,14 +32,13 @@ const getYearsOfExperience = () => {
   return years.toFixed(1);
 };
 
-const isInteractiveTarget = (target: EventTarget | null) => {
+const isTextEntryTarget = (target: EventTarget | null) => {
   if (!(target instanceof HTMLElement)) return false;
 
   const tagName = target.tagName.toLowerCase();
-  if (['input', 'textarea', 'select', 'button', 'a'].includes(tagName) || target.isContentEditable)
-    return true;
+  if (['input', 'textarea', 'select'].includes(tagName) || target.isContentEditable) return true;
 
-  return Boolean(target.closest('[role="button"], [role="link"], [tabindex]:not([tabindex="-1"])'));
+  return Boolean(target.closest('[contenteditable="true"]'));
 };
 
 const getLocalIpFallback = () =>
@@ -77,6 +76,7 @@ const HomeExperience = ({ locale }: HomeExperienceProps) => {
   const [loadingProgress, setLoadingProgress] = useState(0);
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [openAboutDialog, setOpenAboutDialog] = useState(false);
+  const [openHintDialog, setOpenHintDialog] = useState(false);
   const [typedWord, setTypedWord] = useState('');
   const [toast, setToast] = useState<ToastState | null>(null);
   const typedWordRef = useRef('');
@@ -91,10 +91,24 @@ const HomeExperience = ({ locale }: HomeExperienceProps) => {
     setOpenAboutDialog(false);
   }, []);
 
+  const closeHintDialog = useCallback(() => {
+    setOpenHintDialog(false);
+  }, []);
+
   const resetTypedWord = useCallback(() => {
     typedWordRef.current = '';
     setTypedWord('');
   }, []);
+
+  const showAboutDialog = useCallback(() => {
+    resetTypedWord();
+    setOpenAboutDialog(true);
+  }, [resetTypedWord]);
+
+  const showHintDialog = useCallback(() => {
+    resetTypedWord();
+    setOpenHintDialog(true);
+  }, [resetTypedWord]);
 
   useEffect(() => {
     if (isTerrainLoaded) {
@@ -120,10 +134,11 @@ const HomeExperience = ({ locale }: HomeExperienceProps) => {
 
       element.style.left = `${event.clientX + 15}px`;
       element.style.top = `${event.clientY + 15}px`;
+      element.style.transform = 'none';
     };
 
     const handleKeyDown = (event: KeyboardEvent) => {
-      if (openAboutDialog || settingsOpen || isInteractiveTarget(event.target)) return;
+      if (openAboutDialog || openHintDialog || settingsOpen || isTextEntryTarget(event.target)) return;
       if (event.altKey || event.ctrlKey || event.metaKey) return;
 
       if (/^[a-z]$/i.test(event.key)) {
@@ -176,10 +191,11 @@ const HomeExperience = ({ locale }: HomeExperienceProps) => {
       document.removeEventListener('mousemove', handleMouseMove);
       document.removeEventListener('keydown', handleKeyDown);
     };
-  }, [copy.alert.mouseMessage, openAboutDialog, resetTypedWord, settingsOpen, showToast]);
+  }, [copy.alert.mouseMessage, openAboutDialog, openHintDialog, resetTypedWord, settingsOpen, showToast]);
 
   const yearsOfExperience = getYearsOfExperience();
   const contentParagraphs = copy.about.content.replace('{years}', yearsOfExperience).split('\n\n');
+  const hintContentParagraphs = copy.hint.content.split('\n\n');
 
   const skipToContent = () => {
     portfolioSectionRef.current?.focus();
@@ -208,11 +224,22 @@ const HomeExperience = ({ locale }: HomeExperienceProps) => {
         Skip to main content
       </a>
 
-      <AboutDialog
+      <InfoDialog
         open={openAboutDialog}
+        dialogId="about-dialog"
         title={copy.about.title}
         contentParagraphs={contentParagraphs}
+        closeLabel={copy.about.closeLabel}
         onClose={closeAboutDialog}
+      />
+
+      <InfoDialog
+        open={openHintDialog}
+        dialogId="hint-dialog"
+        title={copy.hint.title}
+        contentParagraphs={hintContentParagraphs}
+        closeLabel={copy.hint.closeLabel}
+        onClose={closeHintDialog}
       />
 
       <Suspense fallback={<TerrainFallback />}>
@@ -265,7 +292,7 @@ const HomeExperience = ({ locale }: HomeExperienceProps) => {
             aria-label="Open about me dialog"
             aria-haspopup="dialog"
             aria-expanded={openAboutDialog}
-            onClick={() => setOpenAboutDialog(true)}
+            onClick={showAboutDialog}
           >
             <span className="invisible absolute inset-0 z-10 flex items-center justify-center bg-black/50 text-xl text-white transition group-hover:visible">
               {copy.about.avatar}
@@ -285,7 +312,12 @@ const HomeExperience = ({ locale }: HomeExperienceProps) => {
           </h1>
         </section>
 
-        <FabMenu locale={locale} />
+        <FabMenu
+          locale={locale}
+          hintLabel={copy.hint.triggerLabel}
+          hintOpen={openHintDialog}
+          onHintClick={showHintDialog}
+        />
         <div id="portfolio-section" ref={portfolioSectionRef} tabIndex={-1}>
           <PortfolioSection />
         </div>
