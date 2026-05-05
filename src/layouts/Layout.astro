@@ -18,6 +18,11 @@ const {
 } = Astro.props;
 const canonicalPath = path === '/id' ? '/id/' : path;
 const canonicalUrl = new URL(canonicalPath, SITE_URL).toString();
+const alternateUrls = [
+  { href: new URL('/', SITE_URL).toString(), hreflang: 'en' },
+  { href: new URL('/id/', SITE_URL).toString(), hreflang: 'id' },
+  { href: new URL('/', SITE_URL).toString(), hreflang: 'x-default' },
+];
 ---
 
 <!doctype html>
@@ -31,6 +36,11 @@ const canonicalUrl = new URL(canonicalPath, SITE_URL).toString();
     <meta name="author" content={SEO_DEFAULTS.author} />
     <meta name="theme-color" content={SEO_DEFAULTS.themeColor} />
     <link rel="canonical" href={canonicalUrl} />
+    {
+      alternateUrls.map(({ href, hreflang }) => (
+        <link rel="alternate" hreflang={hreflang} href={href} />
+      ))
+    }
     <link rel="preconnect" href="https://avatars.githubusercontent.com" />
 
     <meta property="og:url" content={canonicalUrl} />

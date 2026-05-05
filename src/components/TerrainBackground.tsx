@@ -107,6 +107,7 @@ const DEFAULT_STAR_CONFIG = {
 };
 
 type StarConfig = typeof DEFAULT_STAR_CONFIG;
+type LiveStarConfig = Pick<StarConfig, 'enabled' | 'starOpacity' | 'starSize'>;
 
 const getRandomFloat = () => {
   const values = new Uint32Array(1);
@@ -116,6 +117,10 @@ const getRandomFloat = () => {
 };
 
 const randomBetween = (min: number, max: number) => min + getRandomFloat() * (max - min);
+
+const getPrefersReducedMotion = () =>
+  typeof globalThis.matchMedia === 'function' &&
+  globalThis.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
 const getErrorMessage = (error: unknown) => {
   if (error instanceof Error) return error.message;
@@ -183,11 +188,16 @@ class TerrainNoiseGenerator {
       this.permutationTable[(gridX + 1 + this.permutationTable[gridY + 1]) & 255] % 12,
     ];
 
-    const calculateCornerContribution = (cornerX: number, cornerY: number, gradientIndex: number): number => {
+    const calculateCornerContribution = (
+      cornerX: number,
+      cornerY: number,
+      gradientIndex: number,
+    ): number => {
       const t = 0.5 - cornerX * cornerX - cornerY * cornerY;
       return t < 0
         ? 0
-        : Math.pow(t, 4) * this.calculateGradientDot(this.gradientVectors[gradientIndex], cornerX, cornerY);
+        : Math.pow(t, 4) *
+            this.calculateGradientDot(this.gradientVectors[gradientIndex], cornerX, cornerY);
     };
 
     const noise =
@@ -200,7 +210,13 @@ class TerrainNoiseGenerator {
     return noise;
   }
 
-  generateTerrainNoise(x: number, y: number, octaves = 4, persistence = 0.5, lacunarity = 2): number {
+  generateTerrainNoise(
+    x: number,
+    y: number,
+    octaves = 4,
+    persistence = 0.5,
+    lacunarity = 2,
+  ): number {
     const cacheKey = `${Math.round(x * 1000)},${Math.round(y * 1000)}_${octaves}_${persistence}_${lacunarity}`;
     const cachedTerrain = this.noiseCache.get(cacheKey);
     if (cachedTerrain !== undefined) return cachedTerrain;
@@ -236,7 +252,10 @@ interface ToggleSettingProps {
 }
 
 const ToggleSetting = ({ checked, disabled = false, id, label, onChange }: ToggleSettingProps) => (
-  <label className={`flex items-center justify-between gap-4 py-2 ${disabled ? 'opacity-50' : ''}`} htmlFor={id}>
+  <label
+    className={`flex items-center justify-between gap-4 py-2 ${disabled ? 'opacity-50' : ''}`}
+    htmlFor={id}
+  >
     <span>{label}</span>
     <input
       id={id}
@@ -260,7 +279,16 @@ interface RangeSettingProps {
   value: number;
 }
 
-const RangeSetting = ({ disabled = false, id, label, max, min, onChange, step, value }: RangeSettingProps) => (
+const RangeSetting = ({
+  disabled = false,
+  id,
+  label,
+  max,
+  min,
+  onChange,
+  step,
+  value,
+}: RangeSettingProps) => (
   <div className={`mt-3 block ${disabled ? 'opacity-50' : ''}`}>
     <div className="mb-1 flex justify-between text-sm">
       <label htmlFor={id}>{label}</label>
@@ -291,7 +319,11 @@ const TerrainBackground = ({
   const containerRef = useRef<HTMLElement>(null);
   const animationFrameRef = useRef<number | null>(null);
   const cameraTargetPosition = useRef(
-    new THREE.Vector3(0, DEFAULT_TERRAIN_CONFIG.cameraHeight, DEFAULT_TERRAIN_CONFIG.cameraDistance)
+    new THREE.Vector3(
+      0,
+      DEFAULT_TERRAIN_CONFIG.cameraHeight,
+      DEFAULT_TERRAIN_CONFIG.cameraDistance,
+    ),
   );
   const currentSpeed = useRef(new THREE.Vector3());
   const lastChunkUpdatePosition = useRef(new THREE.Vector3());
@@ -303,6 +335,13 @@ const TerrainBackground = ({
   const sceneRef = useRef<THREE.Scene | null>(null);
   const terrainMaterialRef = useRef<THREE.MeshBasicMaterial | null>(null);
   const rendererRef = useRef<THREE.WebGLRenderer | null>(null);
+  const settingsDialogRef = useRef<HTMLDialogElement>(null);
+  const onLoadRef = useRef(onLoad);
+  const liveStarConfigRef = useRef<LiveStarConfig>({
+    enabled: DEFAULT_STAR_CONFIG.enabled,
+    starOpacity: DEFAULT_STAR_CONFIG.starOpacity,
+    starSize: DEFAULT_STAR_CONFIG.starSize,
+  });
 
   const [isInitialized, setIsInitialized] = useState(false);
   const [localSettingsOpen, setLocalSettingsOpen] = useState(settingsOpen);
@@ -313,13 +352,15 @@ const TerrainBackground = ({
   const [restartKey, setRestartKey] = useState(0);
   const [preferencesLoaded, setPreferencesLoaded] = useState(false);
   const [devicePixelRatio, setDevicePixelRatio] = useState(1);
+  const [prefersReducedMotion, setPrefersReducedMotion] = useState(getPrefersReducedMotion);
+  const [renderUnavailableMessage, setRenderUnavailableMessage] = useState<string | null>(null);
 
   const notifyError = useCallback(
     (message: string, error: unknown) => {
       const errorMessage = getErrorMessage(error);
       onToast?.(`${message}: ${errorMessage}`, 'error');
     },
-    [onToast]
+    [onToast],
   );
 
   const savePreferences = useCallback(
@@ -356,14 +397,37 @@ const TerrainBackground = ({
             terrainConfig: terrainConfigWithoutCamera,
             starConfig: configToSave?.starConfig || starConfig,
             currentQuality: configToSave?.currentQuality || currentQuality,
-          })
+          }),
         );
       } catch (error) {
         notifyError('Error saving terrain preferences', error);
       }
     },
-    [currentQuality, notifyError, starConfig, terrainConfig]
+    [currentQuality, notifyError, starConfig, terrainConfig],
   );
+
+  useEffect(() => {
+    onLoadRef.current = onLoad;
+  }, [onLoad]);
+
+  useEffect(() => {
+    liveStarConfigRef.current = {
+      enabled: starConfig.enabled,
+      starOpacity: starConfig.starOpacity,
+      starSize: starConfig.starSize,
+    };
+  }, [starConfig.enabled, starConfig.starOpacity, starConfig.starSize]);
+
+  useEffect(() => {
+    if (typeof globalThis.matchMedia !== 'function') return undefined;
+
+    const mediaQuery = globalThis.matchMedia('(prefers-reduced-motion: reduce)');
+    const updateValue = () => setPrefersReducedMotion(mediaQuery.matches);
+
+    updateValue();
+    mediaQuery.addEventListener('change', updateValue);
+    return () => mediaQuery.removeEventListener('change', updateValue);
+  }, []);
 
   useEffect(() => {
     setDevicePixelRatio(globalThis.devicePixelRatio || 1);
@@ -374,7 +438,9 @@ const TerrainBackground = ({
       const savedPrefs = globalThis.localStorage.getItem(TERRAIN_PREFERENCES_KEY);
       if (savedPrefs) {
         const parsedPrefs = JSON.parse(savedPrefs) as {
-          terrainConfig?: Partial<TerrainConfig> & { moveSpeed?: { x: number; y: number; z: number } };
+          terrainConfig?: Partial<TerrainConfig> & {
+            moveSpeed?: { x: number; y: number; z: number };
+          };
           starConfig?: Partial<StarConfig>;
           currentQuality?: CurrentQuality;
         };
@@ -440,17 +506,26 @@ const TerrainBackground = ({
 
       setTerrainConfig((previousConfig) => {
         const updatedConfig = { ...previousConfig, [property]: value } as TerrainConfig;
-        savePreferences({ terrainConfig: updatedConfig, currentQuality: requiresRestart ? 'custom' : currentQuality });
+        savePreferences({
+          terrainConfig: updatedConfig,
+          currentQuality: requiresRestart ? 'custom' : currentQuality,
+        });
         return updatedConfig;
       });
     },
-    [currentQuality, savePreferences]
+    [currentQuality, savePreferences],
   );
 
   const handleStarConfigChange = useCallback(
     (property: keyof StarConfig, value: StarConfig[keyof StarConfig]) => {
       const requiresRestart = (
-        ['chunkSize', 'renderDistance', 'starsPerChunk', 'chunkGenerationBatchSize', 'yRange'] as Array<keyof StarConfig>
+        [
+          'chunkSize',
+          'renderDistance',
+          'starsPerChunk',
+          'chunkGenerationBatchSize',
+          'yRange',
+        ] as Array<keyof StarConfig>
       ).includes(property);
 
       if (requiresRestart) setNeedsRestart(true);
@@ -461,7 +536,7 @@ const TerrainBackground = ({
         return updatedConfig;
       });
     },
-    [savePreferences]
+    [savePreferences],
   );
 
   const handleQualityPresetChange = useCallback(
@@ -474,7 +549,7 @@ const TerrainBackground = ({
         return updatedConfig;
       });
     },
-    [savePreferences]
+    [savePreferences],
   );
 
   const resetSettings = useCallback(() => {
@@ -494,21 +569,47 @@ const TerrainBackground = ({
   useEffect(() => {
     if (!containerRef.current || !preferencesLoaded) return undefined;
 
+    if (prefersReducedMotion) {
+      isInitializedRef.current = true;
+      setIsInitialized(true);
+      setRenderUnavailableMessage('3D terrain disabled because reduced motion is enabled.');
+      onLoadRef.current?.();
+      return undefined;
+    }
+
     isInitializedRef.current = false;
     generatedChunks.current = 0;
     setIsInitialized(false);
+    setRenderUnavailableMessage(null);
 
     const container = containerRef.current;
+    const cameraFar = terrainConfig.fogFar * 2;
+    const camera = new THREE.PerspectiveCamera(
+      60,
+      globalThis.innerWidth / globalThis.innerHeight,
+      0.1,
+      cameraFar,
+    );
+    let renderer: THREE.WebGLRenderer;
+
+    try {
+      renderer = new THREE.WebGLRenderer({
+        antialias: terrainConfig.antialias,
+        alpha: true,
+        powerPreference: 'low-power',
+      });
+    } catch (error) {
+      isInitializedRef.current = true;
+      setIsInitialized(true);
+      setRenderUnavailableMessage(
+        `3D terrain disabled because WebGL is unavailable: ${getErrorMessage(error)}`,
+      );
+      onLoadRef.current?.();
+      return undefined;
+    }
+
     const scene = new THREE.Scene();
     sceneRef.current = scene;
-
-    const cameraFar = terrainConfig.fogFar * 2;
-    const camera = new THREE.PerspectiveCamera(60, globalThis.innerWidth / globalThis.innerHeight, 0.1, cameraFar);
-    const renderer = new THREE.WebGLRenderer({
-      antialias: terrainConfig.antialias,
-      alpha: true,
-      powerPreference: 'low-power',
-    });
     rendererRef.current = renderer;
 
     const terrainMaterial = new THREE.MeshBasicMaterial({
@@ -529,7 +630,11 @@ const TerrainBackground = ({
       }
     };
 
-    const getSharedGeometry = (chunkSize: number, overlap: number, segments: number): THREE.PlaneGeometry => {
+    const getSharedGeometry = (
+      chunkSize: number,
+      overlap: number,
+      segments: number,
+    ): THREE.PlaneGeometry => {
       const cacheKey = `${chunkSize}_${overlap}_${segments}`;
       const cachedGeometry = sharedGeometryCache.get(cacheKey);
       if (cachedGeometry) return cachedGeometry;
@@ -538,7 +643,7 @@ const TerrainBackground = ({
         chunkSize + overlap * 2,
         chunkSize + overlap * 2,
         segments + 2 * overlap,
-        segments + 2 * overlap
+        segments + 2 * overlap,
       );
       sharedGeometryCache.set(cacheKey, geometry);
       return geometry;
@@ -550,8 +655,16 @@ const TerrainBackground = ({
     scene.fog = new THREE.Fog(0x000000, terrainConfig.fogNear, terrainConfig.fogFar);
 
     camera.position.set(0, terrainConfig.cameraHeight, terrainConfig.cameraDistance);
-    camera.lookAt(camera.position.x, terrainConfig.cameraHeight * 0.4, camera.position.z - terrainConfig.cameraDistance);
-    cameraTargetPosition.current = new THREE.Vector3(0, terrainConfig.cameraHeight, terrainConfig.cameraDistance);
+    camera.lookAt(
+      camera.position.x,
+      terrainConfig.cameraHeight * 0.4,
+      camera.position.z - terrainConfig.cameraDistance,
+    );
+    cameraTargetPosition.current = new THREE.Vector3(
+      0,
+      terrainConfig.cameraHeight,
+      terrainConfig.cameraDistance,
+    );
 
     const noiseGenerator = new TerrainNoiseGenerator();
     const terrainChunks = new Map<string, THREE.Mesh>();
@@ -566,8 +679,16 @@ const TerrainBackground = ({
       chunkGenerationQueue.current = [];
       pendingChunks.clear();
 
-      for (let x = cameraChunkX - terrainConfig.renderDistance; x <= cameraChunkX + terrainConfig.renderDistance; x += 1) {
-        for (let z = cameraChunkZ - terrainConfig.renderDistance; z <= cameraChunkZ + terrainConfig.renderDistance; z += 1) {
+      for (
+        let x = cameraChunkX - terrainConfig.renderDistance;
+        x <= cameraChunkX + terrainConfig.renderDistance;
+        x += 1
+      ) {
+        for (
+          let z = cameraChunkZ - terrainConfig.renderDistance;
+          z <= cameraChunkZ + terrainConfig.renderDistance;
+          z += 1
+        ) {
           const chunkKey = getChunkKey(x, z);
           if (!terrainChunks.has(chunkKey)) {
             chunkGenerationQueue.current.push([x, z]);
@@ -582,7 +703,11 @@ const TerrainBackground = ({
       if (terrainChunks.has(chunkKey)) return terrainChunks.get(chunkKey);
 
       pendingChunks.delete(chunkKey);
-      const sharedGeometry = getSharedGeometry(terrainConfig.chunkSize, terrainConfig.overlap, terrainConfig.segments);
+      const sharedGeometry = getSharedGeometry(
+        terrainConfig.chunkSize,
+        terrainConfig.overlap,
+        terrainConfig.segments,
+      );
       const geometry = sharedGeometry.clone();
       const positionsArray = geometry.attributes.position.array as Float32Array;
       const segmentsWithOverlap = terrainConfig.segments + 2 * terrainConfig.overlap + 1;
@@ -596,8 +721,10 @@ const TerrainBackground = ({
         const worldX = (x - terrainConfig.overlap) * xFactor + chunkX * terrainConfig.chunkSize;
         const worldZ = (z - terrainConfig.overlap) * zFactor + chunkZ * terrainConfig.chunkSize;
         positionsArray[index + 2] =
-          noiseGenerator.generateTerrainNoise(worldX * terrainConfig.noiseScale, worldZ * terrainConfig.noiseScale) *
-          terrainConfig.heightScale;
+          noiseGenerator.generateTerrainNoise(
+            worldX * terrainConfig.noiseScale,
+            worldZ * terrainConfig.noiseScale,
+          ) * terrainConfig.heightScale;
       }
 
       geometry.attributes.position.needsUpdate = true;
@@ -611,7 +738,10 @@ const TerrainBackground = ({
     };
 
     const generateChunkBatch = () => {
-      const batchSize = Math.min(terrainConfig.chunkGenerationBatchSize, chunkGenerationQueue.current.length);
+      const batchSize = Math.min(
+        terrainConfig.chunkGenerationBatchSize,
+        chunkGenerationQueue.current.length,
+      );
       if (batchSize === 0) return;
 
       for (let index = 0; index < batchSize; index += 1) {
@@ -622,7 +752,7 @@ const TerrainBackground = ({
       if (!isInitializedRef.current && generatedChunks.current >= terrainConfig.initialChunks) {
         isInitializedRef.current = true;
         setIsInitialized(true);
-        onLoad?.();
+        onLoadRef.current?.();
       }
     };
 
@@ -630,8 +760,16 @@ const TerrainBackground = ({
       const cameraChunkX = Math.floor(cameraTargetPosition.current.x / terrainConfig.chunkSize);
       const cameraChunkZ = Math.floor(cameraTargetPosition.current.z / terrainConfig.chunkSize);
 
-      for (let x = cameraChunkX - terrainConfig.renderDistance; x <= cameraChunkX + terrainConfig.renderDistance; x += 1) {
-        for (let z = cameraChunkZ - terrainConfig.renderDistance; z <= cameraChunkZ + terrainConfig.renderDistance; z += 1) {
+      for (
+        let x = cameraChunkX - terrainConfig.renderDistance;
+        x <= cameraChunkX + terrainConfig.renderDistance;
+        x += 1
+      ) {
+        for (
+          let z = cameraChunkZ - terrainConfig.renderDistance;
+          z <= cameraChunkZ + terrainConfig.renderDistance;
+          z += 1
+        ) {
           const chunkKey = getChunkKey(x, z);
           const isQueued = chunkGenerationQueue.current.some(([cx, cz]) => cx === x && cz === z);
           if (!terrainChunks.has(chunkKey) && !isQueued && !pendingChunks.has(chunkKey)) {
@@ -662,12 +800,13 @@ const TerrainBackground = ({
       const cachedTexture = textureCache.get(texturePath);
       const texture = cachedTexture || loader.load(texturePath);
       if (!cachedTexture) textureCache.set(texturePath, texture);
+      const liveStarConfig = liveStarConfigRef.current;
 
       return new THREE.PointsMaterial({
-        size: starConfig.starSize,
+        size: liveStarConfig.starSize,
         map: texture,
         transparent: true,
-        opacity: starConfig.starOpacity,
+        opacity: liveStarConfig.starOpacity,
         fog: false,
         depthWrite: false,
         blending: THREE.AdditiveBlending,
@@ -696,7 +835,7 @@ const TerrainBackground = ({
       geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
       const texturePath = getRandomFloat() > 0.5 ? '/images/sp1.png' : '/images/sp2.png';
       const starChunk = new THREE.Points(geometry, createStarMaterial(texturePath));
-      starChunk.visible = starConfig.enabled;
+      starChunk.visible = liveStarConfigRef.current.enabled;
       scene.add(starChunk);
       starChunksMap.current.set(chunkKey, starChunk);
       return starChunk;
@@ -707,8 +846,16 @@ const TerrainBackground = ({
       const cameraStarChunkZ = Math.floor(camera.position.z / starConfig.chunkSize);
       starChunkGenerationQueue.current = [];
 
-      for (let x = cameraStarChunkX - starConfig.renderDistance; x <= cameraStarChunkX + starConfig.renderDistance; x += 1) {
-        for (let z = cameraStarChunkZ - starConfig.renderDistance; z <= cameraStarChunkZ + starConfig.renderDistance; z += 1) {
+      for (
+        let x = cameraStarChunkX - starConfig.renderDistance;
+        x <= cameraStarChunkX + starConfig.renderDistance;
+        x += 1
+      ) {
+        for (
+          let z = cameraStarChunkZ - starConfig.renderDistance;
+          z <= cameraStarChunkZ + starConfig.renderDistance;
+          z += 1
+        ) {
           const chunkKey = getChunkKey(x, z);
           if (!starChunksMap.current.has(chunkKey)) starChunkGenerationQueue.current.push([x, z]);
         }
@@ -716,7 +863,10 @@ const TerrainBackground = ({
     };
 
     const generateStarChunkBatch = () => {
-      const batchSize = Math.min(starConfig.chunkGenerationBatchSize, starChunkGenerationQueue.current.length);
+      const batchSize = Math.min(
+        starConfig.chunkGenerationBatchSize,
+        starChunkGenerationQueue.current.length,
+      );
       if (batchSize === 0) return;
 
       for (let index = 0; index < batchSize; index += 1) {
@@ -729,11 +879,22 @@ const TerrainBackground = ({
       const cameraChunkX = Math.floor(cameraTargetPosition.current.x / starConfig.chunkSize);
       const cameraChunkZ = Math.floor(cameraTargetPosition.current.z / starConfig.chunkSize);
 
-      for (let x = cameraChunkX - starConfig.renderDistance; x <= cameraChunkX + starConfig.renderDistance; x += 1) {
-        for (let z = cameraChunkZ - starConfig.renderDistance; z <= cameraChunkZ + starConfig.renderDistance; z += 1) {
+      for (
+        let x = cameraChunkX - starConfig.renderDistance;
+        x <= cameraChunkX + starConfig.renderDistance;
+        x += 1
+      ) {
+        for (
+          let z = cameraChunkZ - starConfig.renderDistance;
+          z <= cameraChunkZ + starConfig.renderDistance;
+          z += 1
+        ) {
           const chunkKey = getChunkKey(x, z);
-          const isQueued = starChunkGenerationQueue.current.some(([cx, cz]) => cx === x && cz === z);
-          if (!starChunksMap.current.has(chunkKey) && !isQueued) starChunkGenerationQueue.current.push([x, z]);
+          const isQueued = starChunkGenerationQueue.current.some(
+            ([cx, cz]) => cx === x && cz === z,
+          );
+          if (!starChunksMap.current.has(chunkKey) && !isQueued)
+            starChunkGenerationQueue.current.push([x, z]);
         }
       }
 
@@ -819,7 +980,7 @@ const TerrainBackground = ({
       sceneRef.current = null;
     };
     // Restart-only scene creation keeps expensive renderer work under explicit user control.
-  }, [restartKey, preferencesLoaded]);
+  }, [prefersReducedMotion, preferencesLoaded, restartKey]);
 
   useEffect(() => {
     if (!sceneRef.current || !terrainMaterialRef.current) return;
@@ -859,18 +1020,30 @@ const TerrainBackground = ({
       setLocalSettingsOpen(open);
       onSettingsOpenChange?.(open);
     },
-    [onSettingsOpenChange]
+    [onSettingsOpenChange],
   );
 
   useEffect(() => {
     if (!localSettingsOpen) return undefined;
 
-    const handleSettingsKeyDown = (event: KeyboardEvent) => {
-      if (event.key === 'Escape') handleSettingsOpenChange(false);
+    const dialog = settingsDialogRef.current;
+    const previouslyFocusedElement =
+      document.activeElement instanceof HTMLElement ? document.activeElement : null;
+    if (!dialog) return undefined;
+
+    const handleCancel = (event: Event) => {
+      event.preventDefault();
+      handleSettingsOpenChange(false);
     };
 
-    document.addEventListener('keydown', handleSettingsKeyDown);
-    return () => document.removeEventListener('keydown', handleSettingsKeyDown);
+    dialog.addEventListener('cancel', handleCancel);
+    if (!dialog.open) dialog.showModal();
+
+    return () => {
+      dialog.removeEventListener('cancel', handleCancel);
+      if (dialog.open) dialog.close();
+      previouslyFocusedElement?.focus({ preventScroll: true });
+    };
   }, [handleSettingsOpenChange, localSettingsOpen]);
 
   return (
@@ -881,257 +1054,275 @@ const TerrainBackground = ({
         aria-label={ariaLabel}
         aria-hidden={ariaHidden}
       >
-        {isInitialized ? null : <div className="absolute inset-0 z-1 bg-black" aria-label="Loading terrain background" />}
+        {isInitialized ? null : (
+          <div className="absolute inset-0 z-1 bg-black" aria-label="Loading terrain background" />
+        )}
+        {renderUnavailableMessage ? <p className="sr-only">{renderUnavailableMessage}</p> : null}
         <div className="pointer-events-none absolute inset-0 bg-black/40" aria-hidden="true" />
       </section>
 
       {localSettingsOpen ? (
-      <dialog
-        id="terrain-settings-panel"
-        open
-        className="fixed inset-0 z-40 m-0 h-dvh max-h-none w-dvw max-w-none border-0 bg-transparent p-0 text-white"
-        aria-labelledby="terrain-settings-title"
-      >
-        <button
-          className="absolute inset-0 bg-black/40"
-          type="button"
-          aria-label="Close terrain settings backdrop"
-          onClick={() => handleSettingsOpenChange(false)}
-        />
-        <section
-          className="absolute top-0 left-0 h-full w-4/5 max-w-87.5 overflow-y-auto bg-black/95 p-6 text-white shadow-2xl transition-transform duration-300 sm:w-87.5"
+        <dialog
+          ref={settingsDialogRef}
+          id="terrain-settings-panel"
+          className="fixed inset-0 z-40 m-0 h-dvh max-h-none w-dvw max-w-none border-0 bg-transparent p-0 text-white"
           aria-labelledby="terrain-settings-title"
+          aria-modal="true"
         >
-          <div className="mb-6 flex items-center justify-between gap-4">
-            <h2 id="terrain-settings-title" className="m-0 text-2xl font-medium">
-              Terrain Settings
-            </h2>
-            <button
-              className="rounded border border-red-300/70 px-3 py-1 text-sm text-red-200 transition hover:bg-red-500/20"
-              type="button"
-              aria-label="Reset to default settings"
-              onClick={resetSettings}
-            >
-              Reset
-            </button>
-          </div>
-
-          <section className="mb-6" aria-labelledby="quality-preset-label">
-            <h3 id="quality-preset-label" className="mb-2 text-base font-medium">
-              Quality Preset
-            </h3>
-            <div className="flex flex-wrap gap-2" role="radiogroup" aria-labelledby="quality-preset-label">
-              {(Object.keys(QUALITY_PRESETS) as QualityKey[]).map((preset) => (
-                <button
-                  key={preset}
-                  className={`min-w-0 flex-1 rounded border border-white/30 px-3 py-2 capitalize transition md:text-xs text-[8px] ${
-                    currentQuality === preset ? 'bg-[#304FFE] text-white' : 'bg-transparent text-white hover:bg-white/10'
-                  }`}
-                  type="button"
-                  role="radio"
-                  aria-checked={currentQuality === preset}
-                  aria-label={`${preset} quality`}
-                  onClick={() => handleQualityPresetChange(preset)}
-                >
-                  {preset}
-                </button>
-              ))}
+          <button
+            className="absolute inset-0 bg-black/40"
+            type="button"
+            aria-label="Close terrain settings backdrop"
+            onClick={() => handleSettingsOpenChange(false)}
+          />
+          <section
+            className="absolute top-0 left-0 h-full w-4/5 max-w-87.5 overflow-y-auto bg-black/95 p-6 text-white shadow-2xl transition-transform duration-300 sm:w-87.5"
+            aria-labelledby="terrain-settings-title"
+          >
+            <div className="mb-6 flex items-center justify-between gap-4">
+              <h2 id="terrain-settings-title" className="m-0 text-2xl font-medium">
+                Terrain Settings
+              </h2>
+              <button
+                className="rounded border border-red-300/70 px-3 py-1 text-sm text-red-200 transition hover:bg-red-500/20"
+                type="button"
+                aria-label="Reset to default settings"
+                onClick={resetSettings}
+              >
+                Reset
+              </button>
             </div>
 
-            {needsRestart ? (
-              <div className="mt-3 rounded bg-yellow-300/20 p-3" role="alert">
-                <p className="mt-0 mb-2 text-xs text-yellow-200">Some changes require restarting the terrain renderer.</p>
-                <button
-                  className="w-full rounded bg-yellow-300/60 px-3 py-2 text-sm font-medium text-black transition hover:bg-yellow-300/80"
-                  type="button"
-                  aria-label="Apply changes and restart renderer"
-                  onClick={() => {
-                    setRestartKey((key) => key + 1);
-                    setNeedsRestart(false);
-                  }}
-                >
-                  Apply & Restart Renderer
-                </button>
+            <section className="mb-6" aria-labelledby="quality-preset-label">
+              <h3 id="quality-preset-label" className="mb-2 text-base font-medium">
+                Quality Preset
+              </h3>
+              <div
+                className="flex flex-wrap gap-2"
+                role="radiogroup"
+                aria-labelledby="quality-preset-label"
+              >
+                {(Object.keys(QUALITY_PRESETS) as QualityKey[]).map((preset) => (
+                  <button
+                    key={preset}
+                    className={`min-w-0 flex-1 rounded border border-white/30 px-3 py-2 capitalize transition md:text-xs text-[8px] ${
+                      currentQuality === preset
+                        ? 'bg-[#304FFE] text-white'
+                        : 'bg-transparent text-white hover:bg-white/10'
+                    }`}
+                    type="button"
+                    role="radio"
+                    aria-checked={currentQuality === preset}
+                    aria-label={`${preset} quality`}
+                    onClick={() => handleQualityPresetChange(preset)}
+                  >
+                    {preset}
+                  </button>
+                ))}
               </div>
-            ) : null}
-          </section>
 
-          <section className="mb-6" aria-labelledby="rendering-settings-label">
-            <h3 id="rendering-settings-label" className="mb-2 text-base font-medium">
-              Rendering
-            </h3>
-            <ToggleSetting
-              id="terrain-antialias"
-              label="Anti-aliasing"
-              checked={terrainConfig.antialias}
-              onChange={(checked) => handleTerrainConfigChange('antialias', checked)}
-            />
-            <RangeSetting
-              id="terrain-detail"
-              label="Terrain Detail"
-              value={terrainConfig.segments}
-              min={10}
-              max={60}
-              step={5}
-              onChange={(value) => handleTerrainConfigChange('segments', value)}
-            />
-            <RangeSetting
-              id="terrain-render-distance"
-              label="Render Distance"
-              value={terrainConfig.renderDistance}
-              min={2}
-              max={5}
-              step={1}
-              onChange={(value) => handleTerrainConfigChange('renderDistance', value)}
-            />
-            <RangeSetting
-              id="terrain-pixel-ratio"
-              label="Pixel Ratio"
-              value={terrainConfig.pixelRatio}
-              min={0.5}
-              max={Math.min(2, devicePixelRatio)}
-              step={0.25}
-              onChange={(value) => handleTerrainConfigChange('pixelRatio', value)}
-            />
-            <div className="mt-1 flex justify-between text-xs text-white/60">
-              <span>Low</span>
-              <span>Normal</span>
-              <span>High</span>
-            </div>
-          </section>
+              {needsRestart ? (
+                <div className="mt-3 rounded bg-yellow-300/20 p-3" role="alert">
+                  <p className="mt-0 mb-2 text-xs text-yellow-200">
+                    Some changes require restarting the terrain renderer.
+                  </p>
+                  <button
+                    className="w-full rounded bg-yellow-300/60 px-3 py-2 text-sm font-medium text-black transition hover:bg-yellow-300/80"
+                    type="button"
+                    aria-label="Apply changes and restart renderer"
+                    onClick={() => {
+                      setRestartKey((key) => key + 1);
+                      setNeedsRestart(false);
+                    }}
+                  >
+                    Apply & Restart Renderer
+                  </button>
+                </div>
+              ) : null}
+            </section>
 
-          <section className="mb-6" aria-labelledby="wireframe-settings-label">
-            <h3 id="wireframe-settings-label" className="mb-2 text-base font-medium">
-              Wireframe
-            </h3>
-            <ToggleSetting
-              id="terrain-wireframe"
-              label="Enable Wireframe"
-              checked={terrainConfig.wireframe}
-              onChange={(checked) => handleTerrainConfigChange('wireframe', checked)}
-            />
-            <RangeSetting
-              id="terrain-wireframe-opacity"
-              label="Wireframe Opacity"
-              value={terrainConfig.wireframeOpacity}
-              min={0.1}
-              max={1}
-              step={0.1}
-              disabled={!terrainConfig.wireframe}
-              onChange={(value) => handleTerrainConfigChange('wireframeOpacity', value)}
-            />
-          </section>
-
-          <section className="mb-6" aria-labelledby="terrain-shape-label">
-            <h3 id="terrain-shape-label" className="mb-2 text-base font-medium">
-              Terrain Shape
-            </h3>
-            <RangeSetting
-              id="terrain-height-scale"
-              label="Height Scale"
-              value={terrainConfig.heightScale}
-              min={1}
-              max={20}
-              step={1}
-              onChange={(value) => handleTerrainConfigChange('heightScale', value)}
-            />
-            <RangeSetting
-              id="terrain-noise-scale"
-              label="Noise Scale"
-              value={terrainConfig.noiseScale}
-              min={0.005}
-              max={0.05}
-              step={0.005}
-              onChange={(value) => handleTerrainConfigChange('noiseScale', value)}
-            />
-          </section>
-
-          <section className="mb-6" aria-labelledby="star-settings-label">
-            <h3 id="star-settings-label" className="mb-2 text-base font-medium">
-              Stars
-            </h3>
-            <ToggleSetting
-              id="terrain-stars"
-              label="Show Stars"
-              checked={starConfig.enabled}
-              onChange={(checked) => handleStarConfigChange('enabled', checked)}
-            />
-            <RangeSetting
-              id="terrain-star-size"
-              label="Star Size"
-              value={starConfig.starSize}
-              min={0.1}
-              max={1}
-              step={0.1}
-              disabled={!starConfig.enabled}
-              onChange={(value) => handleStarConfigChange('starSize', value)}
-            />
-            <RangeSetting
-              id="terrain-star-opacity"
-              label="Star Opacity"
-              value={starConfig.starOpacity}
-              min={0.1}
-              max={1}
-              step={0.1}
-              disabled={!starConfig.enabled}
-              onChange={(value) => handleStarConfigChange('starOpacity', value)}
-            />
-            <RangeSetting
-              id="terrain-stars-per-chunk"
-              label="Stars Per Chunk"
-              value={starConfig.starsPerChunk}
-              min={10}
-              max={200}
-              step={10}
-              disabled={!starConfig.enabled}
-              onChange={(value) => handleStarConfigChange('starsPerChunk', value)}
-            />
-          </section>
-
-          <section className="mb-6" aria-labelledby="appearance-settings-label">
-            <h3 id="appearance-settings-label" className="mb-2 text-base font-medium">
-              Appearance
-            </h3>
-            <label className="flex items-center gap-4" htmlFor="terrain-color">
-              <span className="text-sm">Terrain Color</span>
-              <input
-                id="terrain-color"
-                className="h-10 w-10 cursor-pointer rounded-full border-0 bg-transparent"
-                type="color"
-                value={terrainConfig.terrainColor}
-                onChange={(event) => handleTerrainConfigChange('terrainColor', event.target.value)}
+            <section className="mb-6" aria-labelledby="rendering-settings-label">
+              <h3 id="rendering-settings-label" className="mb-2 text-base font-medium">
+                Rendering
+              </h3>
+              <ToggleSetting
+                id="terrain-antialias"
+                label="Anti-aliasing"
+                checked={terrainConfig.antialias}
+                onChange={(checked) => handleTerrainConfigChange('antialias', checked)}
               />
-            </label>
-          </section>
+              <RangeSetting
+                id="terrain-detail"
+                label="Terrain Detail"
+                value={terrainConfig.segments}
+                min={10}
+                max={60}
+                step={5}
+                onChange={(value) => handleTerrainConfigChange('segments', value)}
+              />
+              <RangeSetting
+                id="terrain-render-distance"
+                label="Render Distance"
+                value={terrainConfig.renderDistance}
+                min={2}
+                max={5}
+                step={1}
+                onChange={(value) => handleTerrainConfigChange('renderDistance', value)}
+              />
+              <RangeSetting
+                id="terrain-pixel-ratio"
+                label="Pixel Ratio"
+                value={terrainConfig.pixelRatio}
+                min={0.5}
+                max={Math.min(2, devicePixelRatio)}
+                step={0.25}
+                onChange={(value) => handleTerrainConfigChange('pixelRatio', value)}
+              />
+              <div className="mt-1 flex justify-between text-xs text-white/60">
+                <span>Low</span>
+                <span>Normal</span>
+                <span>High</span>
+              </div>
+            </section>
 
-          <section className="mb-6" aria-labelledby="camera-settings-label">
-            <h3 id="camera-settings-label" className="mb-2 text-base font-medium">
-              Camera
-            </h3>
-            <p className="rounded bg-white/10 p-2 text-center text-xs text-white/70" role="note" aria-live="polite">
-              Camera settings will not be saved between sessions
-            </p>
-            <RangeSetting
-              id="terrain-camera-height"
-              label="Camera Height"
-              value={terrainConfig.cameraHeight}
-              min={5}
-              max={25}
-              step={1}
-              onChange={(value) => handleTerrainConfigChange('cameraHeight', value)}
-            />
-            <RangeSetting
-              id="terrain-camera-distance"
-              label="Camera Distance"
-              value={terrainConfig.cameraDistance}
-              min={10}
-              max={30}
-              step={1}
-              onChange={(value) => handleTerrainConfigChange('cameraDistance', value)}
-            />
+            <section className="mb-6" aria-labelledby="wireframe-settings-label">
+              <h3 id="wireframe-settings-label" className="mb-2 text-base font-medium">
+                Wireframe
+              </h3>
+              <ToggleSetting
+                id="terrain-wireframe"
+                label="Enable Wireframe"
+                checked={terrainConfig.wireframe}
+                onChange={(checked) => handleTerrainConfigChange('wireframe', checked)}
+              />
+              <RangeSetting
+                id="terrain-wireframe-opacity"
+                label="Wireframe Opacity"
+                value={terrainConfig.wireframeOpacity}
+                min={0.1}
+                max={1}
+                step={0.1}
+                disabled={!terrainConfig.wireframe}
+                onChange={(value) => handleTerrainConfigChange('wireframeOpacity', value)}
+              />
+            </section>
+
+            <section className="mb-6" aria-labelledby="terrain-shape-label">
+              <h3 id="terrain-shape-label" className="mb-2 text-base font-medium">
+                Terrain Shape
+              </h3>
+              <RangeSetting
+                id="terrain-height-scale"
+                label="Height Scale"
+                value={terrainConfig.heightScale}
+                min={1}
+                max={20}
+                step={1}
+                onChange={(value) => handleTerrainConfigChange('heightScale', value)}
+              />
+              <RangeSetting
+                id="terrain-noise-scale"
+                label="Noise Scale"
+                value={terrainConfig.noiseScale}
+                min={0.005}
+                max={0.05}
+                step={0.005}
+                onChange={(value) => handleTerrainConfigChange('noiseScale', value)}
+              />
+            </section>
+
+            <section className="mb-6" aria-labelledby="star-settings-label">
+              <h3 id="star-settings-label" className="mb-2 text-base font-medium">
+                Stars
+              </h3>
+              <ToggleSetting
+                id="terrain-stars"
+                label="Show Stars"
+                checked={starConfig.enabled}
+                onChange={(checked) => handleStarConfigChange('enabled', checked)}
+              />
+              <RangeSetting
+                id="terrain-star-size"
+                label="Star Size"
+                value={starConfig.starSize}
+                min={0.1}
+                max={1}
+                step={0.1}
+                disabled={!starConfig.enabled}
+                onChange={(value) => handleStarConfigChange('starSize', value)}
+              />
+              <RangeSetting
+                id="terrain-star-opacity"
+                label="Star Opacity"
+                value={starConfig.starOpacity}
+                min={0.1}
+                max={1}
+                step={0.1}
+                disabled={!starConfig.enabled}
+                onChange={(value) => handleStarConfigChange('starOpacity', value)}
+              />
+              <RangeSetting
+                id="terrain-stars-per-chunk"
+                label="Stars Per Chunk"
+                value={starConfig.starsPerChunk}
+                min={10}
+                max={200}
+                step={10}
+                disabled={!starConfig.enabled}
+                onChange={(value) => handleStarConfigChange('starsPerChunk', value)}
+              />
+            </section>
+
+            <section className="mb-6" aria-labelledby="appearance-settings-label">
+              <h3 id="appearance-settings-label" className="mb-2 text-base font-medium">
+                Appearance
+              </h3>
+              <label className="flex items-center gap-4" htmlFor="terrain-color">
+                <span className="text-sm">Terrain Color</span>
+                <input
+                  id="terrain-color"
+                  className="h-10 w-10 cursor-pointer rounded-full border-0 bg-transparent"
+                  type="color"
+                  value={terrainConfig.terrainColor}
+                  onChange={(event) =>
+                    handleTerrainConfigChange('terrainColor', event.target.value)
+                  }
+                />
+              </label>
+            </section>
+
+            <section className="mb-6" aria-labelledby="camera-settings-label">
+              <h3 id="camera-settings-label" className="mb-2 text-base font-medium">
+                Camera
+              </h3>
+              <p
+                className="rounded bg-white/10 p-2 text-center text-xs text-white/70"
+                role="note"
+                aria-live="polite"
+              >
+                Camera settings will not be saved between sessions
+              </p>
+              <RangeSetting
+                id="terrain-camera-height"
+                label="Camera Height"
+                value={terrainConfig.cameraHeight}
+                min={5}
+                max={25}
+                step={1}
+                onChange={(value) => handleTerrainConfigChange('cameraHeight', value)}
+              />
+              <RangeSetting
+                id="terrain-camera-distance"
+                label="Camera Distance"
+                value={terrainConfig.cameraDistance}
+                min={10}
+                max={30}
+                step={1}
+                onChange={(value) => handleTerrainConfigChange('cameraDistance', value)}
+              />
+            </section>
           </section>
-        </section>
-      </dialog>
+        </dialog>
       ) : null}
     </>
   );

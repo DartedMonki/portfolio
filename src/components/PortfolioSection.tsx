@@ -28,7 +28,7 @@ const getImageDimensions = (src: string): Promise<{ width: number; height: numbe
 const calculateAspectRatioStyle = (
   width: number,
   height: number,
-  isMobile: boolean
+  isMobile: boolean,
 ): AspectRatioStyle => {
   const aspectRatio = width / height;
   const isSquarish = Math.abs(aspectRatio - 1) < 0.1;
@@ -42,6 +42,12 @@ const calculateAspectRatioStyle = (
   if (aspectRatio > 1) return { width: '640px', height: `${Math.round(640 / aspectRatio)}px` };
   return { width: `${Math.round(640 * aspectRatio)}px`, height: '640px' };
 };
+
+const getProjectTitleId = (title: string) =>
+  `project-${title
+    .toLowerCase()
+    .replaceAll(/[^a-z0-9]+/g, '-')
+    .replaceAll(/^-|-$/g, '')}`;
 
 const useIsMobile = () => {
   const [isMobile, setIsMobile] = useState(false);
@@ -81,14 +87,26 @@ const LinkIcon = ({ type }: { type: ProjectLinkData['type'] }) => {
 };
 
 const ProjectHeader = memo(
-  ({ isDark, technologies, title }: { isDark: boolean; technologies: string[]; title: string }) => (
+  ({
+    id,
+    isDark,
+    technologies,
+    title,
+  }: {
+    id: string;
+    isDark: boolean;
+    technologies: string[];
+    title: string;
+  }) => (
     <header className="my-6 flex flex-col items-center px-4 text-center">
-      <h2 className={`m-0 text-3xl font-bold ${isDark ? 'text-white' : 'text-black'}`}>{title}</h2>
+      <h2 id={id} className={`m-0 text-3xl font-bold ${isDark ? 'text-white' : 'text-black'}`}>
+        {title}
+      </h2>
       <p className={`mt-2 mb-0 text-base ${isDark ? 'text-white/70' : 'text-neutral-600'}`}>
         {technologies.join(' • ')}
       </p>
     </header>
-  )
+  ),
 );
 
 ProjectHeader.displayName = 'ProjectHeader';
@@ -97,13 +115,17 @@ const ProjectAction = memo(
   ({ isDark, link, title }: { isDark: boolean; link?: ProjectLinkData; title: string }) => (
     <div className="my-6 flex justify-center px-4">
       {link ? (
-        <BlackBorderButtonLink href={link.href} invert={isDark} aria-label={`Visit ${title} ${link.text}`}>
+        <BlackBorderButtonLink
+          href={link.href}
+          invert={isDark}
+          aria-label={`Visit ${title} ${link.text}`}
+        >
           <LinkIcon type={link.type} />
           {link.text}
         </BlackBorderButtonLink>
       ) : null}
     </div>
-  )
+  ),
 );
 
 ProjectAction.displayName = 'ProjectAction';
@@ -114,8 +136,14 @@ const LoadingProjectCard = memo(
       className={`flex min-h-screen flex-col items-center justify-center ${
         project.isDark ? 'bg-black' : 'bg-white'
       }`}
+      aria-labelledby={getProjectTitleId(project.title)}
     >
-      <ProjectHeader title={project.title} technologies={project.technologies} isDark={project.isDark} />
+      <ProjectHeader
+        id={getProjectTitleId(project.title)}
+        title={project.title}
+        technologies={project.technologies}
+        isDark={project.isDark}
+      />
       <div
         className="flex items-center justify-center rounded-[20px] bg-white shadow-[12px_18px_34px_-16px_rgba(66,68,90,1)]"
         style={{ width: isMobile ? '256px' : '640px', height: isMobile ? '144px' : '360px' }}
@@ -124,13 +152,21 @@ const LoadingProjectCard = memo(
       </div>
       <ProjectAction link={project.link} isDark={project.isDark} title={project.title} />
     </section>
-  )
+  ),
 );
 
 LoadingProjectCard.displayName = 'LoadingProjectCard';
 
 const ProjectSlides = memo(
-  ({ dimensions, isMobile, project }: { dimensions: AspectRatioStyle; isMobile: boolean; project: ProjectWithDarkMode }) => {
+  ({
+    dimensions,
+    isMobile,
+    project,
+  }: {
+    dimensions: AspectRatioStyle;
+    isMobile: boolean;
+    project: ProjectWithDarkMode;
+  }) => {
     const [isMounted, setIsMounted] = useState(false);
 
     useEffect(() => {
@@ -171,7 +207,7 @@ const ProjectSlides = memo(
         ))}
       </Swiper>
     );
-  }
+  },
 );
 
 ProjectSlides.displayName = 'ProjectSlides';
@@ -179,6 +215,7 @@ ProjectSlides.displayName = 'ProjectSlides';
 const ProjectCard = memo(({ project }: { project: ProjectWithDarkMode }) => {
   const isMobile = useIsMobile();
   const [dimensions, setDimensions] = useState<AspectRatioStyle | null>(null);
+  const titleId = getProjectTitleId(project.title);
 
   useEffect(() => {
     let mounted = true;
@@ -208,9 +245,14 @@ const ProjectCard = memo(({ project }: { project: ProjectWithDarkMode }) => {
       className={`flex min-h-screen max-w-[100vw] flex-col justify-center overflow-x-hidden ${
         project.isDark ? 'bg-black' : 'bg-white'
       }`}
-      aria-labelledby={`project-${project.title}`}
+      aria-labelledby={titleId}
     >
-      <ProjectHeader title={project.title} technologies={project.technologies} isDark={project.isDark} />
+      <ProjectHeader
+        id={titleId}
+        title={project.title}
+        technologies={project.technologies}
+        isDark={project.isDark}
+      />
       <ProjectSlides project={project} dimensions={dimensions} isMobile={isMobile} />
       <ProjectAction link={project.link} isDark={project.isDark} title={project.title} />
     </section>

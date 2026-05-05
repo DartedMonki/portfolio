@@ -13,19 +13,19 @@ nvm use
 
 ## Commands
 
-| Command                | Action                                            |
-| :--------------------- | :------------------------------------------------ |
-| `npm install`          | Install dependencies                              |
-| `npm run dev`          | Start the local dev server at `localhost:4321`    |
-| `npm run check`        | Run Astro type and diagnostics checks             |
-| `npm run build`        | Run checks and build the static site into `dist/` |
-| `npm run preview`      | Preview the production build locally              |
-| `npm run lint`         | Run ESLint                                        |
-| `npm run format:check` | Check Prettier formatting                         |
+| Command                | Action                                         |
+| :--------------------- | :--------------------------------------------- |
+| `npm install`          | Install dependencies                           |
+| `npm run dev`          | Start the local dev server at `localhost:4321` |
+| `npm run check`        | Run Astro type and diagnostics checks          |
+| `npm run build`        | Run checks and build the site into `dist/`     |
+| `npm run preview`      | Preview the production build locally           |
+| `npm run lint`         | Run ESLint                                     |
+| `npm run format:check` | Check Prettier formatting                      |
 
 ## Vercel Deployment
 
-Astro builds static output by default, and `astro.config.mjs` keeps that target explicit with `output: 'static'`. This is the best fit for Vercel's free tier because it does not require the Vercel adapter, serverless functions, or edge functions.
+Astro builds the portfolio pages as static output and uses `@astrojs/vercel` for Vercel deployment. The site also exposes `/api/ip` as a small serverless endpoint for visitor IP detection, so deployments can use Vercel Functions runtime and quota even though the main pages are static.
 
 When importing the repository in Vercel, keep the auto-detected Astro settings:
 

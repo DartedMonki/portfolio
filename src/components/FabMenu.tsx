@@ -10,14 +10,20 @@ const fabClass =
 
 const FabMenu = ({ locale }: FabMenuProps) => {
   const nextLocalePath = locale === 'en' ? '/id/' : '/';
+  const nextLocale = locale === 'en' ? 'id' : 'en';
 
   return (
     <>
-      <a className={`${fabClass} right-[180px] sm:right-[240px]`} href={nextLocalePath} aria-label="language">
-        {locale}
+      <a
+        className={`${fabClass} right-45 sm:right-60`}
+        href={nextLocalePath}
+        hrefLang={nextLocale}
+        aria-label={`Switch language to ${nextLocale}`}
+      >
+        {nextLocale}
       </a>
       <a
-        className={`${fabClass} right-[110px] sm:right-[170px]`}
+        className={`${fabClass} right-27.5 sm:right-42.5`}
         href={LINKEDIN_URL}
         target="_blank"
         rel="noreferrer noopener"
@@ -28,7 +34,7 @@ const FabMenu = ({ locale }: FabMenuProps) => {
         </svg>
       </a>
       <a
-        className={`${fabClass} right-10 sm:right-[100px]`}
+        className={`${fabClass} right-10 sm:right-25`}
         href={GITHUB_URL}
         target="_blank"
         rel="noreferrer noopener"

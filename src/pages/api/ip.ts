@@ -1,16 +1,6 @@
 export const prerender = false;
 
-const IP_HEADERS = [
-  'x-vercel-forwarded-for',
-  'x-forwarded-for',
-  'x-real-ip',
-  'cf-connecting-ip',
-  'true-client-ip',
-  'x-client-ip',
-  'fastly-client-ip',
-  'x-cluster-client-ip',
-  'x-forwarded',
-];
+const TRUSTED_VERCEL_IP_HEADERS = ['x-vercel-forwarded-for', 'x-forwarded-for', 'x-real-ip'];
 
 const LOCAL_HOSTS = new Set(['localhost', '127.0.0.1', '::1', '[::1]']);
 
@@ -18,26 +8,57 @@ const cleanIpAddress = (value: string | undefined) => {
   const trimmedValue = value?.trim();
   if (!trimmedValue) return undefined;
 
-  if (trimmedValue.startsWith('[')) {
-    return trimmedValue.slice(1, trimmedValue.indexOf(']'));
+  const unquotedValue =
+    trimmedValue.startsWith('"') && trimmedValue.endsWith('"')
+      ? trimmedValue.slice(1, -1)
+      : trimmedValue;
+
+  if (unquotedValue.startsWith('[')) {
+    const endBracketIndex = unquotedValue.indexOf(']');
+    return endBracketIndex > 1 ? unquotedValue.slice(1, endBracketIndex) : undefined;
   }
 
-  const hasSingleColon = trimmedValue.indexOf(':') === trimmedValue.lastIndexOf(':');
+  const hasSingleColon = unquotedValue.indexOf(':') === unquotedValue.lastIndexOf(':');
   if (hasSingleColon) {
-    return trimmedValue.split(':')[0];
+    return unquotedValue.split(':')[0];
   }
 
-  return trimmedValue;
+  return unquotedValue;
 };
 
-const getIpFromHeader = (value: string | null) => cleanIpAddress(value?.split(',')[0]);
+const isValidIpv4Address = (value: string) => {
+  const parts = value.split('.');
+  if (parts.length !== 4) return false;
 
-const getIpFromForwardedHeader = (value: string | null) => {
-  const forwardedValue = value?.split(',')[0];
-  const forSegment = forwardedValue?.split(';').find((segment) => segment.trim().toLowerCase().startsWith('for='));
-  const forValue = forSegment?.split('=')[1]?.replaceAll('"', '');
+  return parts.every((part) => {
+    if (!/^\d{1,3}$/.test(part)) return false;
+    const numberValue = Number(part);
+    return numberValue >= 0 && numberValue <= 255 && String(numberValue) === part;
+  });
+};
 
-  return cleanIpAddress(forValue);
+const isValidIpv6Address = (value: string) => {
+  if (!value.includes(':')) return false;
+
+  try {
+    const hostname = new URL(`http://[${value}]`).hostname;
+    return hostname.startsWith('[') && hostname.endsWith(']');
+  } catch {
+    return false;
+  }
+};
+
+const isValidIpAddress = (value: string) => isValidIpv4Address(value) || isValidIpv6Address(value);
+
+const getValidatedIpFromHeader = (value: string | null) => {
+  const candidates = value?.split(',') ?? [];
+
+  for (const candidate of candidates) {
+    const ipAddress = cleanIpAddress(candidate);
+    if (ipAddress && isValidIpAddress(ipAddress)) return ipAddress;
+  }
+
+  return undefined;
 };
 
 const getLocalFallback = (request: Request) => {
@@ -46,11 +67,8 @@ const getLocalFallback = (request: Request) => {
 };
 
 const getRequestIpAddress = (request: Request) => {
-  const forwardedHeaderIp = getIpFromForwardedHeader(request.headers.get('forwarded'));
-  if (forwardedHeaderIp) return forwardedHeaderIp;
-
-  for (const header of IP_HEADERS) {
-    const ipAddress = getIpFromHeader(request.headers.get(header));
+  for (const header of TRUSTED_VERCEL_IP_HEADERS) {
+    const ipAddress = getValidatedIpFromHeader(request.headers.get(header));
     if (ipAddress) return ipAddress;
   }
 
@@ -60,5 +78,5 @@ const getRequestIpAddress = (request: Request) => {
 export function GET({ request }: { request: Request }) {
   const ipAddress = getRequestIpAddress(request);
 
-  return Response.json({ ipAddress });
+  return Response.json({ ipAddress }, { headers: { 'Cache-Control': 'no-store' } });
 }

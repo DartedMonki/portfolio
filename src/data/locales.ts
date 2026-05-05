@@ -35,11 +35,11 @@ My tech stack includes React.js, Next.js, Vue.js for frontend development, and S
   id: {
     about: {
       title: 'Tentang saya',
-      content: `Saya adalah software engineer dengan pengalaman {years} tahun, saat ini bekerja di Monee pada tim ShopeePay. Saya mengembangkan dan memaintain fitur frontend untuk portal admin ShopeePay dan mengelola plugin ShopeePay dalam aplikasi React Native utama. Saya fokus pada peningkatan kualitas kode, deployment yang stabil, dan optimasi performa untuk mendukung operasi pasar multi nasional.
+      content: `Saya adalah software engineer dengan pengalaman {years} tahun. Saat ini saya bekerja di Monee bersama tim ShopeePay, mengembangkan dan merawat fitur frontend untuk portal admin ShopeePay serta plugin ShopeePay di aplikasi React Native utama. Fokus saya adalah menjaga kualitas kode, memastikan rilis berjalan stabil, dan mengoptimalkan performa untuk mendukung operasional di berbagai negara.
 
-Sebelum di Monee, saya bekerja di Segari, perusahaan teknologi dengan pendanaan Seri B yang bergerak di bidang rantai pasok grocery online, dimana saya mengembangkan dan meningkatkan sistem manajemen gudang dengan fokus pada pelacakan inventaris dan logistik. Sebelumnya, saya bekerja di ZebraX Technology dimana saya meningkatkan kualitas kode, melakukan pembaruan UI besar, dan bekerja dengan berbagai API seperti Google Maps, Firebase, dan Midtrans untuk pembayaran.
+Sebelum bergabung dengan Monee, saya bekerja di Segari, perusahaan teknologi Seri B di bidang rantai pasok kebutuhan harian online. Di sana saya membangun dan meningkatkan sistem manajemen gudang, terutama untuk pelacakan inventaris dan logistik. Sebelumnya, saya bekerja di ZebraX Technology, menangani peningkatan kualitas kode, pembaruan UI berskala besar, dan integrasi berbagai API seperti Google Maps, Firebase, serta Midtrans untuk pembayaran.
 
-Stack teknologi yang saya gunakan meliputi React.js, Next.js, Vue.js untuk pengembangan frontend, dan Spring (Java), Go, Laravel untuk backend. Saya juga membangun aplikasi mobile menggunakan Flutter dan React Native, memberikan saya pengalaman dalam pengembangan web dan mobile. Saya menggunakan PostgreSQL untuk database dan memiliki pengalaman dengan tools seperti Redis untuk caching dan Jenkins untuk deployment. Saya senang menyelesaikan tantangan teknis dan selalu bersemangat untuk mempelajari teknologi baru.`,
+Stack yang sering saya gunakan meliputi React.js, Next.js, dan Vue.js untuk frontend; Spring (Java), Go, dan Laravel untuk backend. Saya juga membangun aplikasi mobile dengan Flutter dan React Native, sehingga terbiasa bekerja di ekosistem web maupun mobile. Untuk database, saya menggunakan PostgreSQL, dan saya juga berpengalaman dengan Redis untuk caching serta Jenkins untuk deployment. Saya senang memecahkan tantangan teknis dan selalu antusias mempelajari teknologi baru.`,
       avatar: 'Siapakah saya?',
     },
     alert: {

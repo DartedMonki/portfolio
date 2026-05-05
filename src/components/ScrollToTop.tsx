@@ -24,7 +24,13 @@ const ScrollToTop = () => {
         onClick={() => globalThis.scrollTo({ top: 0 })}
       >
         <svg aria-hidden="true" className="h-6 w-6" viewBox="0 0 24 24" fill="none">
-          <path d="m6 15 6-6 6 6" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" />
+          <path
+            d="m6 15 6-6 6 6"
+            stroke="currentColor"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            strokeWidth="2"
+          />
         </svg>
       </button>
     </div>

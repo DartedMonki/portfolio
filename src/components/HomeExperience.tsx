@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { lazy, Suspense, useCallback, useEffect, useRef, useState } from 'react';
 import { Settings } from 'lucide-react';
 
 import { AVATAR_URL, GITHUB_URL, LINKEDIN_URL } from '../data/constants';
@@ -8,9 +8,10 @@ import AboutDialog from './AboutDialog';
 import FabMenu from './FabMenu';
 import PortfolioSection from './PortfolioSection';
 import ScrollToTop from './ScrollToTop';
-import TerrainBackground from './TerrainBackground';
 import Toast from './Toast';
 import type { ToastState } from './Toast';
+
+const TerrainBackground = lazy(() => import('./TerrainBackground'));
 
 interface HomeExperienceProps {
   locale: Locale;
@@ -31,14 +32,18 @@ const getYearsOfExperience = () => {
   return years.toFixed(1);
 };
 
-const isEditableTarget = (target: EventTarget | null) => {
+const isInteractiveTarget = (target: EventTarget | null) => {
   if (!(target instanceof HTMLElement)) return false;
 
   const tagName = target.tagName.toLowerCase();
-  return ['input', 'textarea', 'select'].includes(tagName) || target.isContentEditable;
+  if (['input', 'textarea', 'select', 'button', 'a'].includes(tagName) || target.isContentEditable)
+    return true;
+
+  return Boolean(target.closest('[role="button"], [role="link"], [tabindex]:not([tabindex="-1"])'));
 };
 
-const getLocalIpFallback = () => (LOCAL_HOSTS.has(globalThis.location.hostname) ? 'localhost' : 'unknown');
+const getLocalIpFallback = () =>
+  LOCAL_HOSTS.has(globalThis.location.hostname) ? 'localhost' : 'unknown';
 
 const getVisitorIpAddress = async () => {
   try {
@@ -57,6 +62,14 @@ const getVisitorIpAddress = async () => {
     return getLocalIpFallback();
   }
 };
+
+const TerrainFallback = () => (
+  <section
+    className="pointer-events-none fixed inset-0 z-0 h-dvh w-dvw bg-black"
+    aria-label="Loading terrain background"
+    aria-hidden="true"
+  />
+);
 
 const HomeExperience = ({ locale }: HomeExperienceProps) => {
   const copy = locales[locale];
@@ -110,14 +123,8 @@ const HomeExperience = ({ locale }: HomeExperienceProps) => {
     };
 
     const handleKeyDown = (event: KeyboardEvent) => {
-      if (isEditableTarget(event.target)) return;
-
-      if (event.key === ' ') {
-        event.preventDefault();
-        typedWordRef.current += ' ';
-        setTypedWord(typedWordRef.current);
-        return;
-      }
+      if (openAboutDialog || settingsOpen || isInteractiveTarget(event.target)) return;
+      if (event.altKey || event.ctrlKey || event.metaKey) return;
 
       if (/^[a-z]$/i.test(event.key)) {
         typedWordRef.current += event.key.toLowerCase();
@@ -125,13 +132,28 @@ const HomeExperience = ({ locale }: HomeExperienceProps) => {
         return;
       }
 
+      if (event.key === ' ' && typedWordRef.current.length > 0) {
+        event.preventDefault();
+        typedWordRef.current += ' ';
+        setTypedWord(typedWordRef.current);
+        return;
+      }
+
       if (event.key === 'Backspace') {
+        if (typedWordRef.current.length === 0) return;
+        event.preventDefault();
         typedWordRef.current = typedWordRef.current.slice(0, -1);
         setTypedWord(typedWordRef.current);
         return;
       }
 
+      if (event.key === 'Escape' && typedWordRef.current.length > 0) {
+        resetTypedWord();
+        return;
+      }
+
       if (event.key !== 'Enter' || typedWordRef.current.length === 0) return;
+      event.preventDefault();
 
       const typedCommand = typedWordRef.current;
       const url = commandUrlMap[typedCommand as keyof typeof commandUrlMap];
@@ -154,7 +176,7 @@ const HomeExperience = ({ locale }: HomeExperienceProps) => {
       document.removeEventListener('mousemove', handleMouseMove);
       document.removeEventListener('keydown', handleKeyDown);
     };
-  }, [copy.alert.mouseMessage, resetTypedWord, showToast]);
+  }, [copy.alert.mouseMessage, openAboutDialog, resetTypedWord, settingsOpen, showToast]);
 
   const yearsOfExperience = getYearsOfExperience();
   const contentParagraphs = copy.about.content.replace('{years}', yearsOfExperience).split('\n\n');
@@ -193,14 +215,16 @@ const HomeExperience = ({ locale }: HomeExperienceProps) => {
         onClose={closeAboutDialog}
       />
 
-      <TerrainBackground
-        onLoad={() => setIsTerrainLoaded(true)}
-        settingsOpen={settingsOpen}
-        onSettingsOpenChange={setSettingsOpen}
-        onToast={showToast}
-        aria-label="Interactive 3D terrain background"
-        aria-hidden={!isTerrainLoaded}
-      />
+      <Suspense fallback={<TerrainFallback />}>
+        <TerrainBackground
+          onLoad={() => setIsTerrainLoaded(true)}
+          settingsOpen={settingsOpen}
+          onSettingsOpenChange={setSettingsOpen}
+          onToast={showToast}
+          aria-label="Interactive 3D terrain background"
+          aria-hidden={!isTerrainLoaded}
+        />
+      </Suspense>
 
       <main className="relative z-10">
         <ScrollToTop />
@@ -231,8 +255,8 @@ const HomeExperience = ({ locale }: HomeExperienceProps) => {
           </button>
 
           <p className="sr-only">
-            This page features an interactive 3D wireframe terrain background created with Three.js. The content below is the
-            main portfolio information.
+            This page features an interactive 3D wireframe terrain background created with Three.js.
+            The content below is the main portfolio information.
           </p>
 
           <button
