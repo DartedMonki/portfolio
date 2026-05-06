@@ -82,6 +82,8 @@ dartedmonki.com
 www.dartedmonki.com
 ```
 
+Use `Managed (Recommended)` widget mode. The client renders it with `appearance: interaction-only`, so most visitors do not see anything, but Cloudflare can still show a fallback challenge when a browser cannot complete the silent private-token path.
+
 Use Upstash Redis in the same Vercel region when possible to keep the contact endpoint fast. If Upstash or Turnstile environment variables are missing in production, `/api/message` fails closed instead of accepting unprotected traffic.
 
 For Resend, use the verified subdomain sender:

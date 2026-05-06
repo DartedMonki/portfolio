@@ -21,8 +21,9 @@ const TURNSTILE_TIMEOUT_MS = 20_000;
 interface TurnstileRenderOptions {
   sitekey: string;
   action: string;
-  size: 'invisible';
+  appearance: 'interaction-only';
   execution: 'execute';
+  theme: 'auto';
   callback: (token: string) => void;
   'error-callback': () => void;
   'expired-callback': () => void;
@@ -200,8 +201,9 @@ const HomeExperience = ({ locale }: HomeExperienceProps) => {
       const widgetId = turnstile.render(container, {
         sitekey: siteKey,
         action: CONTACT_TURNSTILE_ACTION,
-        size: 'invisible',
+        appearance: 'interaction-only',
         execution: 'execute',
+        theme: 'auto',
         callback: (token) => settle(token),
         'error-callback': () => settle(undefined, new Error('Turnstile verification failed')),
         'expired-callback': () => settle(undefined, new Error('Turnstile verification expired')),
@@ -492,8 +494,8 @@ const HomeExperience = ({ locale }: HomeExperienceProps) => {
       </main>
       <div
         ref={turnstileContainerRef}
-        className="pointer-events-none fixed right-0 bottom-0 h-0 w-0 overflow-hidden"
-        aria-hidden="true"
+        className="fixed right-4 bottom-4 z-1000"
+        aria-label="Message verification"
       />
       <Toast toast={toast} onDismiss={() => setToast(null)} />
     </>

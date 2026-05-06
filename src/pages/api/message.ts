@@ -95,6 +95,14 @@ interface RateLimitDecision {
   bucket?: RateLimitBucket;
 }
 
+interface TurnstileVerificationDecision {
+  ok: boolean;
+  status?: number;
+  error?: string;
+  retryAfterSeconds?: number;
+  reason?: string;
+}
+
 const trimSecret = (value: string | undefined) => {
   const trimmedValue = value?.trim();
   return trimmedValue && trimmedValue.length > 0 ? trimmedValue : undefined;
@@ -517,11 +525,17 @@ const isTurnstileVerificationResponse = (
   return isRecord(value);
 };
 
+const logTurnstileFailure = (requestId: string, payload: Record<string, unknown>) => {
+  console.info(
+    JSON.stringify({ event: 'portfolio_message_turnstile_failed', requestId, ...payload }),
+  );
+};
+
 const verifyTurnstileToken = async (
   requestId: string,
   token: string | undefined,
   ipAddress: string,
-) => {
+): Promise<TurnstileVerificationDecision> => {
   const secret = trimSecret(TURNSTILE_SECRET_KEY);
   if (!secret) {
     if (import.meta.env.DEV) return { ok: true };
@@ -529,17 +543,26 @@ const verifyTurnstileToken = async (
     console.error(
       JSON.stringify({ event: 'portfolio_message_turnstile_not_configured', requestId }),
     );
+    logTurnstileFailure(requestId, { reason: 'missing_secret' });
     return {
       ok: false,
       status: 503,
       error: 'Message verification is unavailable',
       retryAfterSeconds: SERVICE_UNAVAILABLE_RETRY_AFTER_SECONDS,
+      reason: 'missing_secret',
     };
   }
 
-  if (!token) return { ok: false, error: 'Message verification is required' };
+  if (!token) {
+    logTurnstileFailure(requestId, { reason: 'missing_token' });
+    return { ok: false, error: 'Message verification is required', reason: 'missing_token' };
+  }
 
-  const body = new URLSearchParams({ secret, response: token, idempotency_key: requestId });
+  const body = new URLSearchParams({
+    secret,
+    response: token,
+    idempotency_key: globalThis.crypto.randomUUID(),
+  });
   if (ipAddress !== 'unknown' && ipAddress !== 'localhost') body.set('remoteip', ipAddress);
 
   const response = await fetch(TURNSTILE_VERIFY_URL, {
@@ -549,47 +572,56 @@ const verifyTurnstileToken = async (
   });
 
   if (!response.ok) {
+    logTurnstileFailure(requestId, {
+      reason: 'siteverify_http_error',
+      status: response.status,
+    });
     return {
       ok: false,
       status: 503,
       error: 'Message verification failed',
       retryAfterSeconds: SERVICE_UNAVAILABLE_RETRY_AFTER_SECONDS,
+      reason: 'siteverify_http_error',
     };
   }
 
   const result: unknown = await response.json();
-  if (!isTurnstileVerificationResponse(result) || !result.success) {
-    console.info(
-      JSON.stringify({
-        event: 'portfolio_message_turnstile_rejected',
-        requestId,
-        errorCodes: isTurnstileVerificationResponse(result) ? result['error-codes'] : undefined,
-      }),
-    );
-    return { ok: false, error: 'Message verification failed' };
+  if (!isTurnstileVerificationResponse(result)) {
+    logTurnstileFailure(requestId, { reason: 'invalid_siteverify_response' });
+    return {
+      ok: false,
+      error: 'Message verification failed',
+      reason: 'invalid_siteverify_response',
+    };
+  }
+
+  if (!result.success) {
+    logTurnstileFailure(requestId, {
+      reason: 'siteverify_rejected',
+      errorCodes: result['error-codes'],
+      hostname: result.hostname || 'missing',
+      action: result.action || 'missing',
+    });
+    return { ok: false, error: 'Message verification failed', reason: 'siteverify_rejected' };
   }
 
   const allowedHosts = getAllowedHosts();
   if (!result.hostname || !allowedHosts.has(result.hostname)) {
-    console.info(
-      JSON.stringify({
-        event: 'portfolio_message_turnstile_hostname_rejected',
-        requestId,
-        hostname: result.hostname || 'unknown',
-      }),
-    );
-    return { ok: false, error: 'Message verification failed' };
+    logTurnstileFailure(requestId, {
+      reason: 'hostname_mismatch',
+      hostname: result.hostname || 'missing',
+      allowedHosts: [...allowedHosts],
+    });
+    return { ok: false, error: 'Message verification failed', reason: 'hostname_mismatch' };
   }
 
   if (result.action !== CONTACT_TURNSTILE_ACTION) {
-    console.info(
-      JSON.stringify({
-        event: 'portfolio_message_turnstile_action_rejected',
-        requestId,
-        action: result.action || 'unknown',
-      }),
-    );
-    return { ok: false, error: 'Message verification failed' };
+    logTurnstileFailure(requestId, {
+      reason: 'action_mismatch',
+      action: result.action || 'missing',
+      expectedAction: CONTACT_TURNSTILE_ACTION,
+    });
+    return { ok: false, error: 'Message verification failed', reason: 'action_mismatch' };
   }
 
   return { ok: true };
@@ -845,7 +877,11 @@ export const POST = (async ({ request }) => {
   if (!turnstile.ok) {
     return jsonResponse(
       request,
-      { ok: false, error: turnstile.error || 'Message verification failed' },
+      {
+        ok: false,
+        error: turnstile.error || 'Message verification failed',
+        requestId,
+      },
       turnstile.status || 403,
       {
         ...clientHeaders,
