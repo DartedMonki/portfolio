@@ -24,9 +24,29 @@ export default defineConfig({
         default: 1000,
       }),
       DISCORD_WEBHOOK_URL: envField.string({ context: 'server', access: 'secret', optional: true }),
+      PUBLIC_TURNSTILE_SITE_KEY: envField.string({
+        context: 'client',
+        access: 'public',
+        optional: true,
+      }),
       RESEND_API_KEY: envField.string({ context: 'server', access: 'secret', optional: true }),
       TELEGRAM_BOT_TOKEN: envField.string({ context: 'server', access: 'secret', optional: true }),
       TELEGRAM_CHAT_ID: envField.string({ context: 'server', access: 'secret', optional: true }),
+      TURNSTILE_SECRET_KEY: envField.string({
+        context: 'server',
+        access: 'secret',
+        optional: true,
+      }),
+      UPSTASH_REDIS_REST_TOKEN: envField.string({
+        context: 'server',
+        access: 'secret',
+        optional: true,
+      }),
+      UPSTASH_REDIS_REST_URL: envField.string({
+        context: 'server',
+        access: 'secret',
+        optional: true,
+      }),
     },
   },
   vite: {

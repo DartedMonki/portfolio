@@ -17,6 +17,8 @@ export interface LocaleCopy {
     messageSending: string;
     messageSent: string;
     messageReceived: string;
+    messageRateLimited: string;
+    messageTemporarilyUnavailable: string;
     messageFailed: string;
   };
   home: {
@@ -47,6 +49,9 @@ My tech stack includes React.js, Next.js, Vue.js for frontend development, and S
       messageSending: 'Sending your message...',
       messageSent: 'Your message was sent.',
       messageReceived: 'Your message was received.',
+      messageRateLimited: 'Please wait a bit before sending another message.',
+      messageTemporarilyUnavailable:
+        'Message service is temporarily unavailable. Please try again soon.',
       messageFailed: 'Could not send your message. Please try again.',
     },
     home: {
@@ -75,6 +80,9 @@ Stack yang sering saya gunakan meliputi React.js, Next.js, dan Vue.js untuk fron
       messageSending: 'Mengirim pesan Anda...',
       messageSent: 'Pesan Anda telah dikirim.',
       messageReceived: 'Pesan Anda telah diterima.',
+      messageRateLimited: 'Mohon tunggu sebentar sebelum mengirim pesan lagi.',
+      messageTemporarilyUnavailable:
+        'Layanan pesan sedang tidak tersedia sementara. Silakan coba lagi nanti.',
       messageFailed: 'Pesan Anda belum bisa dikirim. Silakan coba lagi.',
     },
     home: {

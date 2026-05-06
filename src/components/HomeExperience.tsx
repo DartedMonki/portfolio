@@ -4,6 +4,7 @@ import { Settings } from 'lucide-react';
 import { AVATAR_URL, GITHUB_URL, LINKEDIN_URL } from '../data/constants';
 import { locales } from '../data/locales';
 import type { Locale } from '../data/locales';
+import { CONTACT_TURNSTILE_ACTION } from '../lib/contactSecurity';
 import FabMenu from './FabMenu';
 import InfoDialog from './InfoDialog';
 import PortfolioSection from './PortfolioSection';
@@ -12,6 +13,80 @@ import Toast from './Toast';
 import type { ToastState } from './Toast';
 
 const TerrainBackground = lazy(() => import('./TerrainBackground'));
+const TURNSTILE_SCRIPT_ID = 'cloudflare-turnstile-script';
+const TURNSTILE_SCRIPT_URL =
+  'https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit';
+const TURNSTILE_TIMEOUT_MS = 20_000;
+
+interface TurnstileRenderOptions {
+  sitekey: string;
+  action: string;
+  size: 'invisible';
+  execution: 'execute';
+  callback: (token: string) => void;
+  'error-callback': () => void;
+  'expired-callback': () => void;
+  'timeout-callback': () => void;
+}
+
+interface TurnstileApi {
+  render: (container: HTMLElement, options: TurnstileRenderOptions) => string;
+  execute: (widgetId: string) => void;
+  remove: (widgetId: string) => void;
+}
+
+declare global {
+  interface Window {
+    turnstile?: TurnstileApi;
+  }
+}
+
+let turnstileLoadPromise: Promise<TurnstileApi> | undefined;
+
+const getTurnstileSiteKey = () => {
+  const siteKey = import.meta.env.PUBLIC_TURNSTILE_SITE_KEY as string | undefined;
+  return siteKey?.trim() || undefined;
+};
+
+const loadTurnstile = () => {
+  if (globalThis.window === undefined) {
+    return Promise.reject(new Error('Turnstile is only available in the browser'));
+  }
+
+  if (globalThis.window.turnstile) return Promise.resolve(globalThis.window.turnstile);
+  if (turnstileLoadPromise) return turnstileLoadPromise;
+
+  turnstileLoadPromise = new Promise((resolve, reject) => {
+    const handleLoad = () => {
+      if (globalThis.window.turnstile) {
+        resolve(globalThis.window.turnstile);
+        return;
+      }
+
+      reject(new Error('Turnstile failed to initialize'));
+    };
+
+    const handleError = () => reject(new Error('Turnstile failed to load'));
+    const existingScript = document.getElementById(TURNSTILE_SCRIPT_ID) as HTMLScriptElement | null;
+
+    if (existingScript) {
+      existingScript.addEventListener('load', handleLoad, { once: true });
+      existingScript.addEventListener('error', handleError, { once: true });
+      return;
+    }
+
+    const script = document.createElement('script');
+    script.id = TURNSTILE_SCRIPT_ID;
+    script.src = TURNSTILE_SCRIPT_URL;
+    script.async = true;
+    script.defer = true;
+    script.addEventListener('load', handleLoad, { once: true });
+    script.addEventListener('error', handleError, { once: true });
+    document.head.append(script);
+  });
+
+  return turnstileLoadPromise;
+};
 
 interface HomeExperienceProps {
   locale: Locale;
@@ -58,6 +133,8 @@ const HomeExperience = ({ locale }: HomeExperienceProps) => {
   const [toast, setToast] = useState<ToastState | null>(null);
   const typedWordRef = useRef('');
   const typedTextRef = useRef<HTMLDivElement>(null);
+  const turnstileContainerRef = useRef<HTMLDivElement>(null);
+  const turnstileWidgetIdRef = useRef<string | null>(null);
   const portfolioSectionRef = useRef<HTMLDivElement>(null);
   const isSubmittingMessageRef = useRef(false);
 
@@ -88,6 +165,54 @@ const HomeExperience = ({ locale }: HomeExperienceProps) => {
     setOpenHintDialog(true);
   }, [resetTypedWord]);
 
+  const getMessageVerificationToken = useCallback(async () => {
+    const siteKey = getTurnstileSiteKey();
+    if (!siteKey) return undefined;
+
+    const container = turnstileContainerRef.current;
+    if (!container) throw new Error('Turnstile container is not ready');
+
+    const turnstile = await loadTurnstile();
+    if (turnstileWidgetIdRef.current) {
+      turnstile.remove(turnstileWidgetIdRef.current);
+      turnstileWidgetIdRef.current = null;
+    }
+
+    return new Promise<string>((resolve, reject) => {
+      let settled = false;
+      const settle = (token?: string, error?: Error) => {
+        if (settled) return;
+
+        settled = true;
+        globalThis.clearTimeout(timeoutId);
+        if (error) {
+          reject(error);
+          return;
+        }
+
+        resolve(token || '');
+      };
+
+      const timeoutId = globalThis.setTimeout(() => {
+        settle(undefined, new Error('Turnstile verification timed out'));
+      }, TURNSTILE_TIMEOUT_MS);
+
+      const widgetId = turnstile.render(container, {
+        sitekey: siteKey,
+        action: CONTACT_TURNSTILE_ACTION,
+        size: 'invisible',
+        execution: 'execute',
+        callback: (token) => settle(token),
+        'error-callback': () => settle(undefined, new Error('Turnstile verification failed')),
+        'expired-callback': () => settle(undefined, new Error('Turnstile verification expired')),
+        'timeout-callback': () => settle(undefined, new Error('Turnstile verification timed out')),
+      });
+
+      turnstileWidgetIdRef.current = widgetId;
+      turnstile.execute(widgetId);
+    });
+  }, []);
+
   const submitTypedMessage = useCallback(
     async (message: string) => {
       if (isSubmittingMessageRef.current) {
@@ -99,13 +224,24 @@ const HomeExperience = ({ locale }: HomeExperienceProps) => {
       showToast(copy.alert.messageSending, 'info');
 
       try {
+        const turnstileToken = await getMessageVerificationToken();
         const response = await fetch('/api/message', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ message }),
+          body: JSON.stringify({ message, turnstileToken }),
         });
 
         if (!response.ok) {
+          if (response.status === 429) {
+            showToast(copy.alert.messageRateLimited, 'error');
+            return;
+          }
+
+          if (response.status === 503) {
+            showToast(copy.alert.messageTemporarilyUnavailable, 'error');
+            return;
+          }
+
           throw new Error(`Message request failed with ${response.status}`);
         }
 
@@ -123,11 +259,23 @@ const HomeExperience = ({ locale }: HomeExperienceProps) => {
     [
       copy.alert.messageFailed,
       copy.alert.messageReceived,
+      copy.alert.messageRateLimited,
       copy.alert.messageSending,
       copy.alert.messageSent,
+      copy.alert.messageTemporarilyUnavailable,
+      getMessageVerificationToken,
       showToast,
     ],
   );
+
+  useEffect(() => {
+    return () => {
+      if (!turnstileWidgetIdRef.current || !globalThis.window.turnstile) return;
+
+      globalThis.window.turnstile.remove(turnstileWidgetIdRef.current);
+      turnstileWidgetIdRef.current = null;
+    };
+  }, []);
 
   useEffect(() => {
     if (isTerrainLoaded) {
@@ -212,7 +360,9 @@ const HomeExperience = ({ locale }: HomeExperienceProps) => {
   }, [openAboutDialog, openHintDialog, resetTypedWord, settingsOpen, submitTypedMessage]);
 
   const yearsOfExperience = getYearsOfExperience();
-  const contentParagraphs = copy.about.content.replace('{years}', yearsOfExperience).split('\n\n');
+  const contentParagraphs = copy.about.content
+    .replaceAll('{years}', yearsOfExperience)
+    .split('\n\n');
   const hintContentParagraphs = copy.hint.content.split('\n\n');
 
   const skipToContent = () => {
@@ -340,6 +490,11 @@ const HomeExperience = ({ locale }: HomeExperienceProps) => {
           <PortfolioSection />
         </div>
       </main>
+      <div
+        ref={turnstileContainerRef}
+        className="pointer-events-none fixed right-0 bottom-0 h-0 w-0 overflow-hidden"
+        aria-hidden="true"
+      />
       <Toast toast={toast} onDismiss={() => setToast(null)} />
     </>
   );

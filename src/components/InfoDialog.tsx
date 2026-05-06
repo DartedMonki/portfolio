@@ -83,7 +83,10 @@ const InfoDialog = ({
               </svg>
             </button>
           </div>
-          <article id={descriptionId} className="space-y-4 text-justify text-base leading-7 sm:text-lg">
+          <article
+            id={descriptionId}
+            className="space-y-4 text-justify text-base leading-7 sm:text-lg"
+          >
             {contentParagraphs.map((paragraph) => (
               <p key={paragraph} className="m-0 hyphens-auto">
                 {paragraph}

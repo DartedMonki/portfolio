@@ -22,6 +22,8 @@
     "@astrojs/vercel": "^10.0.6",
     "@fontsource/didact-gothic": "^5.2.7",
     "@tailwindcss/vite": "^4.2.4",
+    "@upstash/ratelimit": "^2.0.8",
+    "@upstash/redis": "^1.37.0",
     "astro": "^6.1.10",
     "lucide-react": "^1.14.0",
     "react": "^19.2.5",
