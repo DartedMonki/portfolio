@@ -84,6 +84,8 @@ www.dartedmonki.com
 
 Use `Managed (Recommended)` widget mode. The client renders it with `appearance: interaction-only`, so most visitors do not see anything, but Cloudflare can still show a fallback challenge when a browser cannot complete the silent private-token path.
 
+The repository defines the production CSP in `vercel.json`. Turnstile can load fallback assets from `https://challenges.cloudflare.com`, `https://fonts.googleapis.com`, and `https://fonts.gstatic.com`; keep those origins in CSP if you move security headers to Vercel or Cloudflare dashboard settings. If another CSP header is configured outside this repo, update or remove it too because browsers enforce all CSP headers they receive.
+
 Use Upstash Redis in the same Vercel region when possible to keep the contact endpoint fast. If Upstash or Turnstile environment variables are missing in production, `/api/message` fails closed instead of accepting unprotected traffic.
 
 For Resend, use the verified subdomain sender:
