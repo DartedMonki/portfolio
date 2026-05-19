@@ -1,8 +1,9 @@
 ---
 import HomeExperience from '../components/HomeExperience';
+import { SEO_PAGES } from '../data/constants';
 import Layout from '../layouts/Layout.astro';
 ---
 
-<Layout lang="en" path="/">
+<Layout lang="en" path="/" title={SEO_PAGES.en.title} description={SEO_PAGES.en.description}>
   <HomeExperience locale="en" client:idle />
 </Layout>

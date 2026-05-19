@@ -1,3 +1,5 @@
+import type { Locale } from './locales';
+
 export type ProjectLinkType = 'github' | 'website';
 
 export interface ProjectImage {
@@ -14,16 +16,23 @@ export interface ProjectLink {
 
 export interface Project {
   title: string;
+  description: Record<Locale, string>;
   technologies: string[];
   images: ProjectImage[];
   link?: ProjectLink;
 }
+
+export type LocalizedProject = Omit<Project, 'description'> & { description: string };
 
 export const FIRST_PROJECT_IS_DARK = false;
 
 export const projects: Project[] = [
   {
     title: 'Wingbox',
+    description: {
+      en: 'A delivery and shipment-tracking platform built with a Next.js frontend, Go, and PostgreSQL for reliable logistics operations.',
+      id: 'Platform pengiriman dan pelacakan paket yang dibangun dengan frontend Next.js, Go, dan PostgreSQL untuk mendukung operasional logistik yang andal.',
+    },
     technologies: ['Next.js', 'Fiber (Go)', 'PostgreSQL'],
     images: [
       { src: '/images/wingbox-home.png', alt: 'Wingbox Home Page', priority: true },
@@ -40,6 +49,10 @@ export const projects: Project[] = [
   },
   {
     title: 'Pura Pura Bike',
+    description: {
+      en: 'A responsive community website for a cycling group, designed to present activities, collaborations, statistics, and contact information clearly.',
+      id: 'Situs komunitas responsif untuk grup bersepeda, dirancang untuk menampilkan aktivitas, kolaborasi, statistik, dan informasi kontak dengan jelas.',
+    },
     technologies: ['Next.js', 'Tailwind CSS'],
     images: [
       { src: '/images/pura-pura-bike-1.png', alt: 'Pura Pura Bike Hero', priority: true },
@@ -56,6 +69,10 @@ export const projects: Project[] = [
   },
   {
     title: 'Pulse AI',
+    description: {
+      en: 'An advertising and campaign management dashboard using Next.js, Prisma, and PostgreSQL to organize ad accounts and campaign workflows.',
+      id: 'Dashboard pengelolaan iklan dan kampanye yang menggunakan Next.js, Prisma, dan PostgreSQL untuk mengatur akun iklan serta alur kerja kampanye.',
+    },
     technologies: ['Next.js', 'Tailwind CSS', 'Prisma', 'PostgreSQL'],
     images: [
       { src: '/images/pulse-ai-1.png', alt: 'Pulse AI Hero', priority: true },
@@ -72,7 +89,11 @@ export const projects: Project[] = [
   },
   {
     title: 'GEP Media',
-    technologies: ['Nextjs', 'Tailwind CSS', 'Prisma', 'PostgreSQL'],
+    description: {
+      en: 'A media and education platform with dashboard, ebook, Learning Management System (LMS), and QR attendance features implemented with Next.js, Prisma, and PostgreSQL.',
+      id: 'Platform media dan edukasi dengan dashboard, ebook, Learning Management System (LMS), dan fitur absensi QR, dibangun menggunakan Next.js, Prisma, dan PostgreSQL.',
+    },
+    technologies: ['Next.js', 'Tailwind CSS', 'Prisma', 'PostgreSQL'],
     images: [
       { src: '/images/gepmedia-1.png', alt: 'GEP Hero', priority: true },
       { src: '/images/gepmedia-2.png', alt: 'GEP Dashboard' },
@@ -87,6 +108,10 @@ export const projects: Project[] = [
   },
   {
     title: 'RSMS Emotion Shareflow',
+    description: {
+      en: 'A Django-based dashboard for revenue summaries and operational reporting, backed by PostgreSQL and a Bootstrap interface.',
+      id: 'Dashboard berbasis Django untuk ringkasan pendapatan dan pelaporan operasional, didukung PostgreSQL dan antarmuka Bootstrap.',
+    },
     technologies: ['Django', 'PostgreSQL', 'jQuery', 'Bootstrap'],
     images: [
       { src: '/images/rsms-1.png', alt: 'RSMS Hero', priority: true },
@@ -103,7 +128,11 @@ export const projects: Project[] = [
   },
   {
     title: 'Intermedia Prima Vision',
-    technologies: ['Javascript', 'HTML', 'Tailwind CSS'],
+    description: {
+      en: 'A company profile website built with JavaScript, HTML, and Tailwind CSS to present services and business information.',
+      id: 'Situs profil perusahaan yang dibangun dengan JavaScript, HTML, dan Tailwind CSS untuk menampilkan layanan serta informasi bisnis.',
+    },
+    technologies: ['JavaScript', 'HTML', 'Tailwind CSS'],
     images: [
       { src: '/images/ipvision.png', alt: 'Intermedia Prima Vision Home Page', priority: true },
     ],
@@ -115,6 +144,10 @@ export const projects: Project[] = [
   },
   {
     title: 'Heetung',
+    description: {
+      en: 'A Flutter counter application with subcounter support, settings, and dark-mode interfaces for mobile productivity use cases.',
+      id: 'Aplikasi pencatat hitungan berbasis Flutter dengan dukungan subcounter, pengaturan, dan tampilan mode gelap untuk kebutuhan produktivitas di perangkat mobile.',
+    },
     technologies: ['Flutter', 'Dart'],
     images: [
       { src: '/images/heetung-1.png', alt: 'Heetung Main Screen', priority: true },
@@ -126,6 +159,10 @@ export const projects: Project[] = [
   },
   {
     title: 'Sembunyi Social',
+    description: {
+      en: 'A Flutter social app prototype covering main feed, direct messages, notifications, and settings screens.',
+      id: 'Prototipe aplikasi sosial berbasis Flutter yang mencakup layar feed utama, pesan langsung, notifikasi, dan pengaturan.',
+    },
     technologies: ['Flutter', 'Dart'],
     images: [
       { src: '/images/sembunyi-social-1.png', alt: 'Sembunyi Social Main Screen', priority: true },
@@ -136,6 +173,10 @@ export const projects: Project[] = [
   },
   {
     title: 'Castle Journey',
+    description: {
+      en: 'A Unity and C# game project featuring menu flow, world scenes, and boss-battle gameplay experimentation.',
+      id: 'Proyek game Unity dan C# yang mengeksplorasi alur menu, scene dunia permainan, dan gameplay pertarungan bos.',
+    },
     technologies: ['Unity', 'C#'],
     images: [
       { src: '/images/main-menu.png', alt: 'Castle Journey Main Menu' },
@@ -151,7 +192,9 @@ export const projects: Project[] = [
   },
 ];
 
-export const portfolioProjects = projects.map((project, index) => ({
-  ...project,
-  isDark: index % 2 === 0 ? FIRST_PROJECT_IS_DARK : !FIRST_PROJECT_IS_DARK,
-}));
+export const getPortfolioProjects = (locale: Locale) =>
+  projects.map((project, index) => ({
+    ...project,
+    description: project.description[locale],
+    isDark: index % 2 === 0 ? FIRST_PROJECT_IS_DARK : !FIRST_PROJECT_IS_DARK,
+  }));

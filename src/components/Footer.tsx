@@ -52,7 +52,10 @@ const Footer = ({ locale, onSubmitMessage }: FooterProps) => {
             aria-label={copy.messageLabel}
             onSubmit={handleSubmit}
           >
-            <span aria-hidden="true" className={`${cornerBaseClass} top-0 left-0 border-t border-l`} />
+            <span
+              aria-hidden="true"
+              className={`${cornerBaseClass} top-0 left-0 border-t border-l`}
+            />
             <span
               aria-hidden="true"
               className={`${cornerBaseClass} top-0 right-0 border-t border-r`}
@@ -115,7 +118,7 @@ const Footer = ({ locale, onSubmitMessage }: FooterProps) => {
                   className="text-white/80 transition hover:text-white"
                   href={LINKEDIN_URL}
                   target="_blank"
-                  rel="noreferrer noopener"
+                  rel="me noreferrer noopener"
                 >
                   LinkedIn
                 </a>
@@ -125,7 +128,7 @@ const Footer = ({ locale, onSubmitMessage }: FooterProps) => {
                   className="text-white/80 transition hover:text-white"
                   href={GITHUB_URL}
                   target="_blank"
-                  rel="noreferrer noopener"
+                  rel="me noreferrer noopener"
                 >
                   GitHub
                 </a>

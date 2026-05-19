@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import * as THREE from 'three';
 
+import type { LocaleCopy } from '../data/locales';
 import type { ToastState } from './Toast';
 
 const TERRAIN_PREFERENCES_KEY = 'terrain_preferences';
@@ -40,6 +41,7 @@ interface TerrainBackgroundProps {
   settingsOpen?: boolean;
   onSettingsOpenChange?: (open: boolean) => void;
   onToast?: (message: string, variant?: ToastState['variant']) => void;
+  copy: LocaleCopy['terrain'];
   'aria-label'?: string;
   'aria-hidden'?: boolean;
 }
@@ -310,11 +312,12 @@ const RangeSetting = ({
 );
 
 const TerrainBackground = ({
+  copy,
   onLoad,
   onSettingsOpenChange,
   onToast,
   settingsOpen = false,
-  'aria-label': ariaLabel = 'Interactive 3D terrain background',
+  'aria-label': ariaLabel,
   'aria-hidden': ariaHidden = false,
 }: TerrainBackgroundProps) => {
   const containerRef = useRef<HTMLElement>(null);
@@ -1099,11 +1102,11 @@ const TerrainBackground = ({
       <section
         ref={containerRef}
         className="pointer-events-none fixed inset-0 z-0 h-dvh w-dvw"
-        aria-label={ariaLabel}
+        aria-label={ariaLabel ?? copy.backgroundLabel}
         aria-hidden={ariaHidden}
       >
         {isInitialized ? null : (
-          <div className="absolute inset-0 z-1 bg-black" aria-label="Loading terrain background" />
+          <div className="absolute inset-0 z-1 bg-black" aria-label={copy.loadingBackground} />
         )}
         {renderUnavailableMessage ? <p className="sr-only">{renderUnavailableMessage}</p> : null}
         <div className="pointer-events-none absolute inset-0 bg-black/40" aria-hidden="true" />
@@ -1120,7 +1123,7 @@ const TerrainBackground = ({
           <button
             className="absolute inset-0 bg-black/40"
             type="button"
-            aria-label="Close terrain settings backdrop"
+            aria-label={copy.closeSettingsBackdropLabel}
             onClick={() => handleSettingsOpenChange(false)}
           />
           <section
@@ -1129,21 +1132,21 @@ const TerrainBackground = ({
           >
             <div className="mb-6 flex items-center justify-between gap-4">
               <h2 id="terrain-settings-title" className="m-0 text-2xl font-medium">
-                Terrain Settings
+                {copy.title}
               </h2>
               <button
                 className="rounded border border-red-300/70 px-3 py-1 text-sm text-red-200 transition hover:bg-red-500/20"
                 type="button"
-                aria-label="Reset to default settings"
+                aria-label={copy.resetLabel}
                 onClick={resetSettings}
               >
-                Reset
+                {copy.reset}
               </button>
             </div>
 
             <section className="mb-6" aria-labelledby="quality-preset-label">
               <h3 id="quality-preset-label" className="mb-2 text-base font-medium">
-                Quality Preset
+                {copy.qualityPreset}
               </h3>
               <div
                 className="flex flex-wrap gap-2"
@@ -1161,29 +1164,27 @@ const TerrainBackground = ({
                     type="button"
                     role="radio"
                     aria-checked={currentQuality === preset}
-                    aria-label={`${preset} quality`}
+                    aria-label={copy.qualityOptionLabels[preset]}
                     onClick={() => handleQualityPresetChange(preset)}
                   >
-                    {preset}
+                    {copy.qualityOptions[preset]}
                   </button>
                 ))}
               </div>
 
               {needsRestart ? (
                 <div className="mt-3 rounded bg-yellow-300/20 p-3" role="alert">
-                  <p className="mt-0 mb-2 text-xs text-yellow-200">
-                    Some changes require restarting the terrain renderer.
-                  </p>
+                  <p className="mt-0 mb-2 text-xs text-yellow-200">{copy.restartMessage}</p>
                   <button
                     className="w-full rounded bg-yellow-300/60 px-3 py-2 text-sm font-medium text-black transition hover:bg-yellow-300/80"
                     type="button"
-                    aria-label="Apply changes and restart renderer"
+                    aria-label={copy.applyRestartLabel}
                     onClick={() => {
                       setRestartKey((key) => key + 1);
                       setNeedsRestart(false);
                     }}
                   >
-                    Apply & Restart Renderer
+                    {copy.applyRestart}
                   </button>
                 </div>
               ) : null}
@@ -1191,17 +1192,17 @@ const TerrainBackground = ({
 
             <section className="mb-6" aria-labelledby="rendering-settings-label">
               <h3 id="rendering-settings-label" className="mb-2 text-base font-medium">
-                Rendering
+                {copy.rendering}
               </h3>
               <ToggleSetting
                 id="terrain-antialias"
-                label="Anti-aliasing"
+                label={copy.antialiasing}
                 checked={terrainConfig.antialias}
                 onChange={(checked) => handleTerrainConfigChange('antialias', checked)}
               />
               <RangeSetting
                 id="terrain-detail"
-                label="Terrain Detail"
+                label={copy.terrainDetail}
                 value={terrainConfig.segments}
                 min={10}
                 max={60}
@@ -1210,7 +1211,7 @@ const TerrainBackground = ({
               />
               <RangeSetting
                 id="terrain-render-distance"
-                label="Render Distance"
+                label={copy.renderDistance}
                 value={terrainConfig.renderDistance}
                 min={2}
                 max={5}
@@ -1219,7 +1220,7 @@ const TerrainBackground = ({
               />
               <RangeSetting
                 id="terrain-pixel-ratio"
-                label="Pixel Ratio"
+                label={copy.pixelRatio}
                 value={terrainConfig.pixelRatio}
                 min={0.5}
                 max={Math.min(2, devicePixelRatio)}
@@ -1227,25 +1228,25 @@ const TerrainBackground = ({
                 onChange={(value) => handleTerrainConfigChange('pixelRatio', value)}
               />
               <div className="mt-1 flex justify-between text-xs text-white/60">
-                <span>Low</span>
-                <span>Normal</span>
-                <span>High</span>
+                <span>{copy.low}</span>
+                <span>{copy.normal}</span>
+                <span>{copy.high}</span>
               </div>
             </section>
 
             <section className="mb-6" aria-labelledby="wireframe-settings-label">
               <h3 id="wireframe-settings-label" className="mb-2 text-base font-medium">
-                Wireframe
+                {copy.wireframe}
               </h3>
               <ToggleSetting
                 id="terrain-wireframe"
-                label="Enable Wireframe"
+                label={copy.enableWireframe}
                 checked={terrainConfig.wireframe}
                 onChange={(checked) => handleTerrainConfigChange('wireframe', checked)}
               />
               <RangeSetting
                 id="terrain-wireframe-opacity"
-                label="Wireframe Opacity"
+                label={copy.wireframeOpacity}
                 value={terrainConfig.wireframeOpacity}
                 min={0.1}
                 max={1}
@@ -1257,11 +1258,11 @@ const TerrainBackground = ({
 
             <section className="mb-6" aria-labelledby="terrain-shape-label">
               <h3 id="terrain-shape-label" className="mb-2 text-base font-medium">
-                Terrain Shape
+                {copy.terrainShape}
               </h3>
               <RangeSetting
                 id="terrain-height-scale"
-                label="Height Scale"
+                label={copy.heightScale}
                 value={terrainConfig.heightScale}
                 min={1}
                 max={20}
@@ -1270,7 +1271,7 @@ const TerrainBackground = ({
               />
               <RangeSetting
                 id="terrain-noise-scale"
-                label="Noise Scale"
+                label={copy.noiseScale}
                 value={terrainConfig.noiseScale}
                 min={0.005}
                 max={0.05}
@@ -1281,17 +1282,17 @@ const TerrainBackground = ({
 
             <section className="mb-6" aria-labelledby="star-settings-label">
               <h3 id="star-settings-label" className="mb-2 text-base font-medium">
-                Stars
+                {copy.stars}
               </h3>
               <ToggleSetting
                 id="terrain-stars"
-                label="Show Stars"
+                label={copy.showStars}
                 checked={starConfig.enabled}
                 onChange={(checked) => handleStarConfigChange('enabled', checked)}
               />
               <RangeSetting
                 id="terrain-star-size"
-                label="Star Size"
+                label={copy.starSize}
                 value={starConfig.starSize}
                 min={0.1}
                 max={1}
@@ -1301,7 +1302,7 @@ const TerrainBackground = ({
               />
               <RangeSetting
                 id="terrain-star-opacity"
-                label="Star Opacity"
+                label={copy.starOpacity}
                 value={starConfig.starOpacity}
                 min={0.1}
                 max={1}
@@ -1311,7 +1312,7 @@ const TerrainBackground = ({
               />
               <RangeSetting
                 id="terrain-stars-per-chunk"
-                label="Stars Per Chunk"
+                label={copy.starsPerChunk}
                 value={starConfig.starsPerChunk}
                 min={10}
                 max={200}
@@ -1323,10 +1324,10 @@ const TerrainBackground = ({
 
             <section className="mb-6" aria-labelledby="appearance-settings-label">
               <h3 id="appearance-settings-label" className="mb-2 text-base font-medium">
-                Appearance
+                {copy.appearance}
               </h3>
               <label className="flex items-center gap-4" htmlFor="terrain-color">
-                <span className="text-sm">Terrain Color</span>
+                <span className="text-sm">{copy.terrainColor}</span>
                 <input
                   id="terrain-color"
                   className="h-10 w-10 cursor-pointer rounded-full border-0 bg-transparent"
@@ -1341,18 +1342,18 @@ const TerrainBackground = ({
 
             <section className="mb-6" aria-labelledby="camera-settings-label">
               <h3 id="camera-settings-label" className="mb-2 text-base font-medium">
-                Camera
+                {copy.camera}
               </h3>
               <p
                 className="rounded bg-white/10 p-2 text-center text-xs text-white/70"
                 role="note"
                 aria-live="polite"
               >
-                Camera settings will not be saved between sessions
+                {copy.cameraNotSaved}
               </p>
               <RangeSetting
                 id="terrain-camera-height"
-                label="Camera Height"
+                label={copy.cameraHeight}
                 value={terrainConfig.cameraHeight}
                 min={5}
                 max={25}
@@ -1361,7 +1362,7 @@ const TerrainBackground = ({
               />
               <RangeSetting
                 id="terrain-camera-distance"
-                label="Camera Distance"
+                label={copy.cameraDistance}
                 value={terrainConfig.cameraDistance}
                 min={10}
                 max={30}

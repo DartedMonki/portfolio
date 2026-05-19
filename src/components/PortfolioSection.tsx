@@ -5,12 +5,13 @@ import { memo, useEffect, useState } from 'react';
 import { EffectCards, Virtual } from 'swiper/modules';
 import { Swiper, SwiperSlide } from 'swiper/react';
 
-import { portfolioProjects } from '../data/projects';
-import type { Project, ProjectLink as ProjectLinkData } from '../data/projects';
+import { getPortfolioProjects } from '../data/projects';
+import type { Locale } from '../data/locales';
+import type { LocalizedProject, ProjectLink as ProjectLinkData } from '../data/projects';
 import BlackBorderButtonLink from './BlackBorderButtonLink';
 import OptimizedImage from './OptimizedImage';
 
-type ProjectWithDarkMode = Project & { isDark: boolean };
+type ProjectWithDarkMode = LocalizedProject & { isDark: boolean };
 
 interface AspectRatioStyle {
   width: string;
@@ -88,11 +89,13 @@ const LinkIcon = ({ type }: { type: ProjectLinkData['type'] }) => {
 
 const ProjectHeader = memo(
   ({
+    description,
     id,
     isDark,
     technologies,
     title,
   }: {
+    description: string;
     id: string;
     isDark: boolean;
     technologies: string[];
@@ -102,7 +105,12 @@ const ProjectHeader = memo(
       <h2 id={id} className={`m-0 text-3xl font-bold ${isDark ? 'text-white' : 'text-black'}`}>
         {title}
       </h2>
-      <p className={`mt-2 mb-0 text-base ${isDark ? 'text-white/70' : 'text-neutral-600'}`}>
+      <p
+        className={`mt-3 mb-0 max-w-4xl text-sm leading-7 ${isDark ? 'text-white/75' : 'text-neutral-700'}`}
+      >
+        {description}
+      </p>
+      <p className={`mt-3 mb-0 text-sm font-bold ${isDark ? 'text-white/50' : 'text-neutral-400'}`}>
         {technologies.join(' • ')}
       </p>
     </header>
@@ -141,6 +149,7 @@ const LoadingProjectCard = memo(
       <ProjectHeader
         id={getProjectTitleId(project.title)}
         title={project.title}
+        description={project.description}
         technologies={project.technologies}
         isDark={project.isDark}
       />
@@ -250,6 +259,7 @@ const ProjectCard = memo(({ project }: { project: ProjectWithDarkMode }) => {
       <ProjectHeader
         id={titleId}
         title={project.title}
+        description={project.description}
         technologies={project.technologies}
         isDark={project.isDark}
       />
@@ -261,13 +271,17 @@ const ProjectCard = memo(({ project }: { project: ProjectWithDarkMode }) => {
 
 ProjectCard.displayName = 'ProjectCard';
 
-const PortfolioSection = memo(() => (
-  <div>
-    {portfolioProjects.map((project) => (
-      <ProjectCard key={project.title} project={project} />
-    ))}
-  </div>
-));
+const PortfolioSection = memo(({ locale }: { locale: Locale }) => {
+  const portfolioProjects = getPortfolioProjects(locale);
+
+  return (
+    <div>
+      {portfolioProjects.map((project) => (
+        <ProjectCard key={project.title} project={project} />
+      ))}
+    </div>
+  );
+});
 
 PortfolioSection.displayName = 'PortfolioSection';
 

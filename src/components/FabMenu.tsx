@@ -41,7 +41,7 @@ const FabMenu = ({ hintLabel, hintOpen, locale, onHintClick }: FabMenuProps) => 
         className={`${fabClass} right-27.5 sm:right-42.5`}
         href={LINKEDIN_URL}
         target="_blank"
-        rel="noreferrer noopener"
+        rel="me noreferrer noopener"
         aria-label="linkedIn"
       >
         <svg aria-hidden="true" className="h-6 w-6" viewBox="0 0 24 24" fill="currentColor">
@@ -52,7 +52,7 @@ const FabMenu = ({ hintLabel, hintOpen, locale, onHintClick }: FabMenuProps) => 
         className={`${fabClass} right-10 sm:right-25`}
         href={GITHUB_URL}
         target="_blank"
-        rel="noreferrer noopener"
+        rel="me noreferrer noopener"
         aria-label="github"
       >
         <svg aria-hidden="true" className="h-6 w-6" viewBox="0 0 24 24" fill="currentColor">

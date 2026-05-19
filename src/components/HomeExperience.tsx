@@ -116,10 +116,10 @@ const isTextEntryTarget = (target: EventTarget | null) => {
   return Boolean(target.closest('[contenteditable="true"]'));
 };
 
-const TerrainFallback = () => (
+const TerrainFallback = ({ label }: { label: string }) => (
   <section
     className="pointer-events-none fixed inset-0 z-0 h-dvh w-dvw bg-black"
-    aria-label="Loading terrain background"
+    aria-label={label}
     aria-hidden="true"
   />
 );
@@ -378,7 +378,7 @@ const HomeExperience = ({ locale }: HomeExperienceProps) => {
       {isTerrainLoaded ? null : (
         <progress
           className="fixed top-0 left-0 z-9999 h-1 w-full appearance-none bg-transparent [&::-moz-progress-bar]:bg-[#304FFE] [&::-webkit-progress-bar]:bg-transparent [&::-webkit-progress-value]:bg-[#304FFE]"
-          aria-label="Loading terrain"
+          aria-label={copy.terrain.loading}
           value={loadingProgress}
           max={100}
         />
@@ -413,13 +413,14 @@ const HomeExperience = ({ locale }: HomeExperienceProps) => {
         onClose={closeHintDialog}
       />
 
-      <Suspense fallback={<TerrainFallback />}>
+      <Suspense fallback={<TerrainFallback label={copy.terrain.loadingBackground} />}>
         <TerrainBackground
           onLoad={() => setIsTerrainLoaded(true)}
           settingsOpen={settingsOpen}
           onSettingsOpenChange={setSettingsOpen}
           onToast={showToast}
-          aria-label="Interactive 3D terrain background"
+          copy={copy.terrain}
+          aria-label={copy.terrain.backgroundLabel}
           aria-hidden={!isTerrainLoaded}
         />
       </Suspense>
@@ -437,13 +438,13 @@ const HomeExperience = ({ locale }: HomeExperienceProps) => {
 
         <section className="relative flex min-h-screen flex-col items-center justify-center overflow-hidden">
           <div className="pointer-events-none absolute top-4 right-4 z-20 flex items-center rounded bg-black/50 px-2 py-1 text-sm font-medium text-white">
-            Built with Three.js
+            {copy.terrain.badge}
           </div>
 
           <button
             className="absolute top-4 left-4 z-20 rounded-full bg-black/50 p-3 text-white transition hover:bg-black/70"
             type="button"
-            aria-label="Open terrain settings"
+            aria-label={copy.terrain.openSettingsLabel}
             aria-expanded={settingsOpen}
             aria-controls="terrain-settings-panel"
             id="terrain-settings-button"
@@ -452,35 +453,43 @@ const HomeExperience = ({ locale }: HomeExperienceProps) => {
             <Settings aria-hidden="true" className="h-6 w-6" strokeWidth={2} />
           </button>
 
-          <p className="sr-only">
-            This page features an interactive 3D wireframe terrain background created with Three.js.
-            The content below is the main portfolio information.
-          </p>
+          <p className="sr-only">{copy.terrain.pageDescription}</p>
 
-          <button
-            className="group relative z-10 overflow-hidden rounded-full p-0"
-            type="button"
-            aria-label="Open about me dialog"
-            aria-haspopup="dialog"
-            aria-expanded={openAboutDialog}
-            onClick={showAboutDialog}
-          >
-            <span className="invisible absolute inset-0 z-10 flex items-center justify-center bg-black/50 text-xl text-white transition group-hover:visible">
-              {copy.about.avatar}
-            </span>
-            <img
-              src={AVATAR_URL}
-              width="200"
-              height="200"
-              alt="Afriyadi Y. R."
-              loading="eager"
-              decoding="async"
-              fetchPriority="high"
-            />
-          </button>
-          <h1 className="relative z-10 mt-4 mb-2 text-[2rem] font-medium tracking-[0.5px] text-white sm:text-4xl">
-            afriyadi y. r.
-          </h1>
+          <div className="group relative z-10 flex flex-col items-center">
+            <button
+              className="relative overflow-hidden rounded-full p-0"
+              type="button"
+              aria-label="Open about me dialog"
+              aria-haspopup="dialog"
+              aria-expanded={openAboutDialog}
+              onClick={showAboutDialog}
+            >
+              <span className="invisible absolute inset-0 z-10 flex items-center justify-center bg-black/50 text-xl text-white transition group-hover:visible group-focus-within:visible">
+                {copy.about.avatar}
+              </span>
+              <img
+                src={AVATAR_URL}
+                width="200"
+                height="200"
+                alt="Afriyadi Y. R."
+                loading="eager"
+                decoding="async"
+                fetchPriority="high"
+              />
+            </button>
+            <h1 className="mt-4 mb-2 text-[2rem] font-medium tracking-[0.5px] text-white sm:text-4xl">
+              <button
+                className="rounded bg-transparent p-0 text-inherit transition hover:text-white focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-white"
+                type="button"
+                aria-label="Open about me dialog"
+                aria-haspopup="dialog"
+                aria-expanded={openAboutDialog}
+                onClick={showAboutDialog}
+              >
+                afriyadi y. r.
+              </button>
+            </h1>
+          </div>
         </section>
 
         <FabMenu
@@ -490,7 +499,7 @@ const HomeExperience = ({ locale }: HomeExperienceProps) => {
           onHintClick={showHintDialog}
         />
         <div id="portfolio-section" ref={portfolioSectionRef} tabIndex={-1}>
-          <PortfolioSection />
+          <PortfolioSection locale={locale} />
         </div>
       </main>
       <Footer locale={locale} onSubmitMessage={submitTypedMessage} />
