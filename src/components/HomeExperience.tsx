@@ -6,6 +6,7 @@ import { locales } from '../data/locales';
 import type { Locale } from '../data/locales';
 import { CONTACT_TURNSTILE_ACTION } from '../lib/contactSecurity';
 import FabMenu from './FabMenu';
+import Footer from './Footer';
 import InfoDialog from './InfoDialog';
 import PortfolioSection from './PortfolioSection';
 import ScrollToTop from './ScrollToTop';
@@ -492,6 +493,7 @@ const HomeExperience = ({ locale }: HomeExperienceProps) => {
           <PortfolioSection />
         </div>
       </main>
+      <Footer locale={locale} onSubmitMessage={submitTypedMessage} />
       <div
         ref={turnstileContainerRef}
         className="fixed right-4 bottom-4 z-1000"

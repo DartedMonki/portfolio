@@ -24,6 +24,15 @@ export interface LocaleCopy {
   home: {
     you: string;
   };
+  footer: {
+    brandSubtitle: string[];
+    description: string;
+    messageLabel: string;
+    messagePlaceholder: string;
+    messageSubmit: string;
+    socialLabel: string;
+    builtWith: string;
+  };
 }
 
 export const locales = {
@@ -57,6 +66,16 @@ My tech stack includes React.js, Next.js, Vue.js for frontend development, and S
     home: {
       you: 'You: ',
     },
+    footer: {
+      brandSubtitle: ['SOFTWARE', 'ENGINEER'],
+      description:
+        "Building web and mobile experiences across React, Next.js, Vue, Flutter, and React Native.",
+      messageLabel: 'SEND MESSAGE TO ME',
+      messagePlaceholder: 'ENTER MESSAGE',
+      messageSubmit: 'Send message',
+      socialLabel: 'SOCIAL',
+      builtWith: 'BUILT WITH ASTRO + THREE.JS',
+    },
   },
   id: {
     about: {
@@ -87,6 +106,16 @@ Stack yang sering saya gunakan meliputi React.js, Next.js, dan Vue.js untuk fron
     },
     home: {
       you: 'Anda: ',
+    },
+    footer: {
+      brandSubtitle: ['SOFTWARE', 'ENGINEER'],
+      description:
+        'Membangun pengalaman web dan mobile dengan React, Next.js, Vue, Flutter, dan React Native.',
+      messageLabel: 'KIRIM PESAN KE SAYA',
+      messagePlaceholder: 'TULIS PESAN',
+      messageSubmit: 'Kirim pesan',
+      socialLabel: 'SOSIAL',
+      builtWith: 'DIBUAT DENGAN ASTRO + THREE.JS',
     },
   },
 } satisfies Record<Locale, LocaleCopy>;
