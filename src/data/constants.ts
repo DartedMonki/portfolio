@@ -1,4 +1,4 @@
-export const SITE_URL = 'https://dartedmonki.com';
+export const SITE_URL = 'https://www.dartedmonki.com';
 export const GITHUB_URL = 'https://github.com/DartedMonki';
 export const LINKEDIN_URL = 'https://www.linkedin.com/in/daniafriyadi/';
 export const AVATAR_URL = 'https://avatars.githubusercontent.com/u/12370632?v=4';
