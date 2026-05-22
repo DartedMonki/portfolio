@@ -22,6 +22,9 @@ export interface LocaleCopy {
     messageFailed: string;
   };
   home: {
+    displayName: string;
+    aboutLabel: string;
+    skipToContent: string;
     you: string;
   };
   terrain: {
@@ -117,6 +120,9 @@ My tech stack includes React.js, Next.js, Vue.js for frontend development, and S
       messageFailed: 'Could not send your message. Please try again.',
     },
     home: {
+      displayName: 'afriyadi y. r.',
+      aboutLabel: 'Open about me dialog',
+      skipToContent: 'Skip to main content',
       you: 'You: ',
     },
     terrain: {
@@ -212,6 +218,9 @@ Stack yang sering saya gunakan meliputi React.js, Next.js, dan Vue.js untuk fron
       messageFailed: 'Pesan Anda belum bisa dikirim. Silakan coba lagi.',
     },
     home: {
+      displayName: 'afriyadi y. r.',
+      aboutLabel: 'Buka dialog tentang saya',
+      skipToContent: 'Lewati ke konten utama',
       you: 'Anda: ',
     },
     terrain: {

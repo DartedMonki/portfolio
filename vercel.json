@@ -1,4 +1,33 @@
 {
+  "redirects": [
+    {
+      "source": "/id",
+      "has": [
+        {
+          "type": "host",
+          "value": "www.dartedmonki.com"
+        }
+      ],
+      "destination": "https://dartedmonki.com/id/",
+      "permanent": true
+    },
+    {
+      "source": "/:path*",
+      "has": [
+        {
+          "type": "host",
+          "value": "www.dartedmonki.com"
+        }
+      ],
+      "destination": "https://dartedmonki.com/:path*",
+      "permanent": true
+    },
+    {
+      "source": "/id",
+      "destination": "/id/",
+      "permanent": true
+    }
+  ],
   "headers": [
     {
       "source": "/(.*)",

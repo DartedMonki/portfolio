@@ -392,7 +392,7 @@ const HomeExperience = ({ locale }: HomeExperienceProps) => {
           skipToContent();
         }}
       >
-        Skip to main content
+        {copy.home.skipToContent}
       </a>
 
       <InfoDialog
@@ -437,7 +437,10 @@ const HomeExperience = ({ locale }: HomeExperienceProps) => {
         </div>
 
         <section className="relative flex min-h-screen flex-col items-center justify-center overflow-hidden">
-          <div className="pointer-events-none absolute top-4 right-4 z-20 flex items-center rounded bg-black/50 px-2 py-1 text-sm font-medium text-white">
+          <div
+            className="pointer-events-none absolute top-4 right-4 z-20 flex items-center rounded bg-black/50 px-2 py-1 text-sm font-medium text-white"
+            data-nosnippet
+          >
             {copy.terrain.badge}
           </div>
 
@@ -459,7 +462,7 @@ const HomeExperience = ({ locale }: HomeExperienceProps) => {
             <button
               className="relative overflow-hidden rounded-full p-0"
               type="button"
-              aria-label="Open about me dialog"
+              aria-label={copy.home.aboutLabel}
               aria-haspopup="dialog"
               aria-expanded={openAboutDialog}
               onClick={showAboutDialog}
@@ -481,12 +484,12 @@ const HomeExperience = ({ locale }: HomeExperienceProps) => {
               <button
                 className="rounded bg-transparent p-0 text-inherit transition hover:text-white focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-white"
                 type="button"
-                aria-label="Open about me dialog"
+                aria-label={copy.home.aboutLabel}
                 aria-haspopup="dialog"
                 aria-expanded={openAboutDialog}
                 onClick={showAboutDialog}
               >
-                afriyadi y. r.
+                {copy.home.displayName}
               </button>
             </h1>
           </div>
