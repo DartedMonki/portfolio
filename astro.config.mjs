@@ -4,6 +4,40 @@ import vercel from '@astrojs/vercel';
 import tailwindcss from '@tailwindcss/vite';
 import { defineConfig, envField } from 'astro/config';
 
+/** @returns {import('vite').Plugin} */
+const obfuscateClientChunks = () => {
+  /** @type {import('vite').Plugin} */
+  const plugin = {
+    name: 'portfolio-js-confuser',
+    apply: 'build',
+    async generateBundle(_options, bundle) {
+      const { obfuscate } = await import('js-confuser');
+      await Promise.all(
+        Object.values(bundle).map(async (entry) => {
+          if (entry.type !== 'chunk' || !entry.fileName.startsWith('_astro/')) return;
+          if (!entry.fileName.endsWith('.js')) return;
+
+          const result = await obfuscate(entry.code, {
+            target: 'browser',
+            identifierGenerator: 'randomized',
+            compact: true,
+            hexadecimalNumbers: true,
+            renameVariables: true,
+            renameGlobals: false,
+            stringConcealing: true,
+            stringEncoding: true,
+            duplicateLiteralsRemoval: true,
+          });
+
+          entry.code = result.code;
+        }),
+      );
+    },
+  };
+
+  return plugin;
+};
+
 // https://astro.build/config
 export default defineConfig({
   output: 'static',
@@ -50,6 +84,6 @@ export default defineConfig({
     },
   },
   vite: {
-    plugins: [tailwindcss()],
+    plugins: [tailwindcss(), obfuscateClientChunks()],
   },
 });

@@ -130,5 +130,8 @@ const structuredDataJson = JSON.stringify(structuredData).replaceAll('<', '\\u00
   </head>
   <body>
     <slot />
+    <script>
+      import '../lib/disableDevtools';
+    </script>
   </body>
 </html>
