@@ -28,6 +28,28 @@ export const FIRST_PROJECT_IS_DARK = false;
 
 export const projects: Project[] = [
   {
+    title: 'Prime Education Center',
+    description: {
+      en: 'A bilingual education platform for schools, foundations, and families, with B2B and B2C learning experiences managed through Payload CMS.',
+      id: 'Platform pendidikan bilingual untuk sekolah, yayasan, dan keluarga, dengan pengalaman belajar B2B dan B2C yang dikelola melalui Payload CMS.',
+    },
+    technologies: ['Next.js', 'Payload CMS', 'Tailwind CSS'],
+    images: [
+      { src: '/images/prime-edu-center-1.png', alt: 'Prime Education Center bilingual landing page', priority: true },
+      { src: '/images/prime-edu-center-2.png', alt: 'Prime Education Center B2B landing page' },
+      { src: '/images/prime-edu-center-3.png', alt: 'Prime Education Center B2C landing page' },
+      { src: '/images/prime-edu-center-4.png', alt: 'Prime Education Center curriculum approach' },
+      { src: '/images/prime-edu-center-5.png', alt: 'Prime Education Center home learning catalogue' },
+      { src: '/images/prime-edu-center-6.png', alt: 'Prime Education Center Payload CMS media library' },
+      { src: '/images/prime-edu-center-7.png', alt: 'Prime Education Center Payload CMS landing page editor' },
+    ],
+    link: {
+      href: 'https://primeeducenter.com/',
+      text: 'Website',
+      type: 'website',
+    },
+  },
+  {
     title: 'Wingbox',
     description: {
       en: 'A delivery and shipment-tracking platform built with a Next.js frontend, Go, and PostgreSQL for reliable logistics operations.',
