@@ -42,6 +42,8 @@ When importing the repository in Vercel, keep the auto-detected Astro settings:
 
 The production build runs `npm run check` before `astro build`. Astro diagnostics, lint, formatting, unit tests, API integration tests and npm audit must all pass. A reported vulnerability or an unavailable audit service fails the check, including on Vercel. Browser verification is a separate `npm run test:browser` command and is not part of the deployment pipeline.
 
+On Vercel (`VERCEL=1`), npm's `prebuild` hook normalizes `vercel.json` with the project's Prettier settings before running checks. It verifies that the parsed configuration remains identical, including cron schedules, redirects and security headers. Invalid JSON fails the build. Local builds never autoformat configuration, and `vercel.json` remains covered by the format check.
+
 ### Astro 7 Integration
 
 The project keeps Astro's built-in request pipeline and uses `src/middleware.ts` with the matched `routePattern` and `isPrerendered` context to add consistent request IDs plus no-store and security headers to dynamic API endpoints. API responses expose `X-Request-Id` for correlation with runtime logs. Endpoint authorization remains in the handlers, not in raw-path matching.

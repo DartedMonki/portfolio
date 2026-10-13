@@ -9,6 +9,7 @@
   "scripts": {
     "dev": "astro dev",
     "check": "astro check && npm run lint && npm run format:check && npm test && npm run test:integration && npm audit",
+    "prebuild": "node scripts/normalizeVercelConfig.mjs",
     "build": "npm run check && astro build",
     "preview": "vite preview --outDir dist/client",
     "astro": "astro",
