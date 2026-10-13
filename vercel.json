@@ -1,4 +1,10 @@
 {
+  "crons": [
+    {
+      "path": "/api/cron/redis-heartbeat",
+      "schedule": "0 0 * * *"
+    }
+  ],
   "redirects": [
     {
       "source": "/id",

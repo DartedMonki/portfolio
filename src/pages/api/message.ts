@@ -1,5 +1,3 @@
-import { Ratelimit } from '@upstash/ratelimit';
-import { Redis } from '@upstash/redis';
 import type { APIRoute } from 'astro';
 import {
   CONTACT_ALLOWED_ORIGIN,
@@ -11,11 +9,17 @@ import {
   TELEGRAM_BOT_TOKEN,
   TELEGRAM_CHAT_ID,
   TURNSTILE_SECRET_KEY,
-  UPSTASH_REDIS_REST_TOKEN,
-  UPSTASH_REDIS_REST_URL,
 } from 'astro:env/server';
 
 import { CONTACT_TURNSTILE_ACTION } from '../../lib/contactSecurity';
+import {
+  createMessageRateLimiters,
+  evaluateRateLimitChecks,
+  SERVICE_UNAVAILABLE_RETRY_AFTER_SECONDS,
+  type RateLimitBucket,
+  type RateLimitCheck,
+} from '../../lib/messageRateLimit';
+import { redis } from '../../lib/redis';
 import { getRequestId, getRequestIpAddress } from '../../lib/request';
 
 export const prerender = false;
@@ -26,8 +30,8 @@ const CLIENT_COOKIE_NAME = '__Host-dm_contact_client_id';
 const CLIENT_COOKIE_MAX_AGE_SECONDS = 60 * 60 * 24 * 365;
 const TURNSTILE_VERIFY_URL = 'https://challenges.cloudflare.com/turnstile/v0/siteverify';
 const TURNSTILE_TOKEN_MAX_LENGTH = 4096;
+const PROVIDER_REQUEST_TIMEOUT_MS = 8000;
 const CORS_MAX_AGE_SECONDS = 600;
-const SERVICE_UNAVAILABLE_RETRY_AFTER_SECONDS = 60;
 
 const PRODUCTION_ALLOWED_ORIGINS = ['https://dartedmonki.com', 'https://www.dartedmonki.com'];
 const DEVELOPMENT_ALLOWED_ORIGINS = [
@@ -39,7 +43,6 @@ const DEVELOPMENT_ALLOWED_ORIGINS = [
 const ALLOWED_CORS_REQUEST_HEADERS = new Set(['content-type']);
 
 type DeliveryChannel = 'resend' | 'telegram' | 'discord';
-type RateLimitBucket = 'global' | 'client' | 'ip' | 'network' | 'message';
 
 interface MessagePayload {
   message: string;
@@ -64,7 +67,18 @@ interface ClientIdentity {
 interface DeliveryResult {
   channel: DeliveryChannel;
   ok: boolean;
+  durationMs: number;
+  status?: number;
   error?: string;
+}
+
+class ProviderResponseError extends Error {
+  readonly status: number;
+
+  constructor(provider: DeliveryChannel, status: number) {
+    super(`${provider} responded with HTTP ${status}`);
+    this.status = status;
+  }
 }
 
 interface AccessValidationResult {
@@ -81,20 +95,6 @@ interface TurnstileVerificationResponse {
   'error-codes'?: string[];
 }
 
-interface RateLimitCheck {
-  bucket: RateLimitBucket;
-  key: string;
-  limiter: Ratelimit;
-}
-
-interface RateLimitDecision {
-  ok: boolean;
-  status?: number;
-  error?: string;
-  retryAfterSeconds?: number;
-  bucket?: RateLimitBucket;
-}
-
 interface TurnstileVerificationDecision {
   ok: boolean;
   status?: number;
@@ -108,38 +108,7 @@ const trimSecret = (value: string | undefined) => {
   return trimmedValue && trimmedValue.length > 0 ? trimmedValue : undefined;
 };
 
-const createRedisClient = () => {
-  const url = trimSecret(UPSTASH_REDIS_REST_URL);
-  const token = trimSecret(UPSTASH_REDIS_REST_TOKEN);
-  if (!url || !token) return undefined;
-
-  return new Redis({ url, token });
-};
-
-const redis = createRedisClient();
-
-const createRateLimiter = (
-  bucket: RateLimitBucket,
-  requests: number,
-  window: Parameters<typeof Ratelimit.slidingWindow>[1],
-) => {
-  if (!redis) return undefined;
-
-  return new Ratelimit({
-    redis,
-    limiter: Ratelimit.slidingWindow(requests, window),
-    analytics: true,
-    prefix: `portfolio:message:${bucket}`,
-  });
-};
-
-const rateLimiters = {
-  global: createRateLimiter('global', 100, '1 h'),
-  client: createRateLimiter('client', 5, '30 m'),
-  ip: createRateLimiter('ip', 5, '10 m'),
-  network: createRateLimiter('network', 20, '1 h'),
-  message: createRateLimiter('message', 3, '1 h'),
-};
+const rateLimiters = createMessageRateLimiters(redis);
 
 const isRecord = (value: unknown): value is Record<string, unknown> => {
   return typeof value === 'object' && value !== null && !Array.isArray(value);
@@ -161,11 +130,12 @@ const truncateText = (value: string, maxLength: number) => {
 };
 
 const summarizeError = (error: unknown) => {
-  if (
-    error instanceof Error &&
-    /^(resend|telegram|discord) responded with HTTP \d+$/.test(error.message)
-  ) {
+  if (error instanceof ProviderResponseError) {
     return error.message;
+  }
+
+  if (error instanceof Error && (error.name === 'TimeoutError' || error.name === 'AbortError')) {
+    return 'Delivery request timed out';
   }
 
   return 'Delivery request failed';
@@ -384,10 +354,6 @@ const getNetworkIdentity = (ipAddress: string) => {
   return `unknown:${ipAddress}`;
 };
 
-const getRetryAfterSeconds = (reset: number) => {
-  return Math.max(1, Math.ceil((reset - Date.now()) / 1000));
-};
-
 const getConfiguredRateLimitChecks = async (
   buckets: RateLimitBucket[],
   payload: Pick<MessagePayload, 'message' | 'ipAddress'>,
@@ -401,6 +367,7 @@ const getConfiguredRateLimitChecks = async (
     let key: string;
     switch (bucket) {
       case 'global':
+      case 'delivery':
         key = 'all';
         break;
       case 'client':
@@ -428,54 +395,9 @@ const checkRateLimits = async (
   buckets: RateLimitBucket[],
   payload: Pick<MessagePayload, 'message' | 'ipAddress'>,
   clientId: string,
-): Promise<RateLimitDecision> => {
+) => {
   const checks = await getConfiguredRateLimitChecks(buckets, payload, clientId);
-
-  if (!checks) {
-    if (import.meta.env.DEV) return { ok: true };
-
-    console.error(
-      JSON.stringify({ event: 'portfolio_message_rate_limiter_not_configured', requestId }),
-    );
-    return {
-      ok: false,
-      status: 503,
-      error: 'Message service is temporarily unavailable',
-      retryAfterSeconds: SERVICE_UNAVAILABLE_RETRY_AFTER_SECONDS,
-    };
-  }
-
-  for (const check of checks) {
-    try {
-      const result = await check.limiter.limit(check.key);
-      if (!result.success) {
-        return {
-          ok: false,
-          status: 429,
-          error: 'Too many messages. Please try again later.',
-          retryAfterSeconds: getRetryAfterSeconds(result.reset),
-          bucket: check.bucket,
-        };
-      }
-    } catch (error) {
-      console.error(
-        JSON.stringify({
-          event: 'portfolio_message_rate_limiter_failed',
-          requestId,
-          bucket: check.bucket,
-          error: error instanceof Error ? error.message : 'Unknown rate limiter error',
-        }),
-      );
-      return {
-        ok: false,
-        status: 503,
-        error: 'Message service is temporarily unavailable',
-        retryAfterSeconds: SERVICE_UNAVAILABLE_RETRY_AFTER_SECONDS,
-      };
-    }
-  }
-
-  return { ok: true };
+  return evaluateRateLimitChecks(checks, requestId, import.meta.env.DEV);
 };
 
 const parseRequestBody = async (
@@ -565,11 +487,24 @@ const verifyTurnstileToken = async (
   });
   if (ipAddress !== 'unknown' && ipAddress !== 'localhost') body.set('remoteip', ipAddress);
 
-  const response = await fetch(TURNSTILE_VERIFY_URL, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-    body,
-  });
+  let response: Response;
+  try {
+    response = await fetch(TURNSTILE_VERIFY_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+      body,
+      signal: AbortSignal.timeout(PROVIDER_REQUEST_TIMEOUT_MS),
+    });
+  } catch {
+    logTurnstileFailure(requestId, { reason: 'siteverify_network_error' });
+    return {
+      ok: false,
+      status: 503,
+      error: 'Message verification is unavailable',
+      retryAfterSeconds: SERVICE_UNAVAILABLE_RETRY_AFTER_SECONDS,
+      reason: 'siteverify_network_error',
+    };
+  }
 
   if (!response.ok) {
     logTurnstileFailure(requestId, {
@@ -585,7 +520,19 @@ const verifyTurnstileToken = async (
     };
   }
 
-  const result: unknown = await response.json();
+  let result: unknown;
+  try {
+    result = await response.json();
+  } catch {
+    logTurnstileFailure(requestId, { reason: 'invalid_siteverify_response' });
+    return {
+      ok: false,
+      status: 503,
+      error: 'Message verification is unavailable',
+      retryAfterSeconds: SERVICE_UNAVAILABLE_RETRY_AFTER_SECONDS,
+      reason: 'invalid_siteverify_response',
+    };
+  }
   if (!isTurnstileVerificationResponse(result)) {
     logTurnstileFailure(requestId, { reason: 'invalid_siteverify_response' });
     return {
@@ -678,7 +625,7 @@ const buildHtmlMessage = (payload: MessagePayload) => {
 
 const assertOkResponse = async (response: Response, provider: DeliveryChannel) => {
   if (response.ok) return;
-  throw new Error(`${provider} responded with HTTP ${response.status}`);
+  throw new ProviderResponseError(provider, response.status);
 };
 
 const sendResendEmail = async (payload: MessagePayload) => {
@@ -690,6 +637,7 @@ const sendResendEmail = async (payload: MessagePayload) => {
 
   const response = await fetch('https://api.resend.com/emails', {
     method: 'POST',
+    signal: AbortSignal.timeout(PROVIDER_REQUEST_TIMEOUT_MS),
     headers: {
       Authorization: `Bearer ${apiKey}`,
       'Content-Type': 'application/json',
@@ -717,6 +665,7 @@ const sendTelegramMessage = async (payload: MessagePayload) => {
 
   const response = await fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
     method: 'POST',
+    signal: AbortSignal.timeout(PROVIDER_REQUEST_TIMEOUT_MS),
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
       chat_id: chatId,
@@ -735,6 +684,7 @@ const sendDiscordMessage = async (payload: MessagePayload) => {
 
   const response = await fetch(`${webhookUrl}?wait=true`, {
     method: 'POST',
+    signal: AbortSignal.timeout(PROVIDER_REQUEST_TIMEOUT_MS),
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
       username: 'Portfolio Message',
@@ -769,12 +719,19 @@ const runDelivery = async (
   deliver: (payload: MessagePayload) => Promise<boolean | undefined>,
   payload: MessagePayload,
 ): Promise<DeliveryResult | undefined> => {
+  const startedAt = Date.now();
   try {
     const delivered = await deliver(payload);
     if (!delivered) return undefined;
-    return { channel, ok: true };
+    return { channel, ok: true, durationMs: Date.now() - startedAt };
   } catch (error) {
-    return { channel, ok: false, error: summarizeError(error) };
+    return {
+      channel,
+      ok: false,
+      durationMs: Date.now() - startedAt,
+      ...(error instanceof ProviderResponseError ? { status: error.status } : {}),
+      error: summarizeError(error),
+    };
   }
 };
 
@@ -782,6 +739,60 @@ const getClientHeaders = (clientIdentity: ClientIdentity) => {
   return clientIdentity.setCookie
     ? { 'Set-Cookie': getClientCookieHeader(clientIdentity.id) }
     : undefined;
+};
+
+const deliverMessage = async (
+  request: Request,
+  payload: MessagePayload,
+  clientHeaders: ReturnType<typeof getClientHeaders>,
+) => {
+  const requestId = payload.requestId;
+  const deliveryResults = (
+    await Promise.all([
+      runDelivery('resend', sendResendEmail, payload),
+      runDelivery('telegram', sendTelegramMessage, payload),
+      runDelivery('discord', sendDiscordMessage, payload),
+    ])
+  ).filter((result): result is DeliveryResult => Boolean(result));
+
+  const successfulChannels = deliveryResults
+    .filter((result) => result.ok)
+    .map((result) => result.channel);
+  const failedResults = deliveryResults.filter((result) => !result.ok);
+
+  const logDeliveryResults = successfulChannels.length > 0 ? console.info : console.error;
+  logDeliveryResults(
+    JSON.stringify({
+      event: 'portfolio_message_delivery_results',
+      requestId,
+      successfulChannels,
+      deliveryResults,
+      failedResults,
+      externalChannelsConfigured: deliveryResults.length,
+    }),
+  );
+
+  if (successfulChannels.length > 0) {
+    return jsonResponse(request, { ok: true, deliveryStatus: 'delivered' }, 200, clientHeaders);
+  }
+
+  if (import.meta.env.DEV && deliveryResults.length === 0) {
+    console.info(
+      JSON.stringify({
+        event: 'portfolio_message_development_log',
+        requestId,
+        message: payload.message,
+      }),
+    );
+    return jsonResponse(request, { ok: true, deliveryStatus: 'logged' }, 202, clientHeaders);
+  }
+
+  return jsonResponse(
+    request,
+    { ok: false, error: 'Message delivery is temporarily unavailable', requestId },
+    503,
+    { ...clientHeaders, 'Retry-After': String(SERVICE_UNAVAILABLE_RETRY_AFTER_SECONDS) },
+  );
 };
 
 export const OPTIONS = (({ request }) => {
@@ -827,15 +838,6 @@ export const POST = (async ({ request }) => {
     clientIdentity.id,
   );
   if (!preVerificationRateLimit.ok) {
-    console.info(
-      JSON.stringify({
-        event: 'portfolio_message_rate_limited',
-        requestId,
-        bucket: preVerificationRateLimit.bucket,
-        retryAfterSeconds: preVerificationRateLimit.retryAfterSeconds,
-      }),
-    );
-
     return jsonResponse(
       request,
       {
@@ -894,20 +896,11 @@ export const POST = (async ({ request }) => {
 
   const verifiedRateLimit = await checkRateLimits(
     requestId,
-    ['client', 'message'],
+    ['client', 'message', 'delivery'],
     basePayload,
     clientIdentity.id,
   );
   if (!verifiedRateLimit.ok) {
-    console.info(
-      JSON.stringify({
-        event: 'portfolio_message_rate_limited',
-        requestId,
-        bucket: verifiedRateLimit.bucket,
-        retryAfterSeconds: verifiedRateLimit.retryAfterSeconds,
-      }),
-    );
-
     return jsonResponse(
       request,
       { ok: false, error: verifiedRateLimit.error || 'Too many messages. Please try again later.' },
@@ -934,43 +927,12 @@ export const POST = (async ({ request }) => {
   console.info(
     JSON.stringify({
       event: 'portfolio_message_received',
-      ipAddress: payload.ipAddress,
       requestId: payload.requestId,
-      userAgent: payload.userAgent,
-      referer: payload.referer,
-      origin: payload.origin,
       messageLength: payload.message.length,
     }),
   );
 
-  const deliveryResults = (
-    await Promise.all([
-      runDelivery('resend', sendResendEmail, payload),
-      runDelivery('telegram', sendTelegramMessage, payload),
-      runDelivery('discord', sendDiscordMessage, payload),
-    ])
-  ).filter((result): result is DeliveryResult => Boolean(result));
-
-  const successfulChannels = deliveryResults
-    .filter((result) => result.ok)
-    .map((result) => result.channel);
-  const failedResults = deliveryResults.filter((result) => !result.ok);
-
-  console.info(
-    JSON.stringify({
-      event: 'portfolio_message_delivery_results',
-      requestId: payload.requestId,
-      successfulChannels,
-      failedResults,
-      externalChannelsConfigured: deliveryResults.length,
-    }),
-  );
-
-  if (successfulChannels.length > 0) {
-    return jsonResponse(request, { ok: true, deliveryStatus: 'delivered' }, 200, clientHeaders);
-  }
-
-  return jsonResponse(request, { ok: true, deliveryStatus: 'logged' }, 202, clientHeaders);
+  return deliverMessage(request, payload, clientHeaders);
 }) satisfies APIRoute;
 
 export const ALL = (({ request }) => {

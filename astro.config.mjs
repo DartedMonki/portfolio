@@ -2,14 +2,34 @@
 import react from '@astrojs/react';
 import vercel from '@astrojs/vercel';
 import tailwindcss from '@tailwindcss/vite';
-import { defineConfig, envField } from 'astro/config';
+import { defineConfig, envField, logHandlers } from 'astro/config';
+import jsConfuserPackage from 'js-confuser/package.json' with { type: 'json' };
 
 /** @returns {import('vite').Plugin} */
 const obfuscateClientChunks = () => {
+  /** @type {import('js-confuser').ObfuscateOptions} */
+  const options = {
+    target: 'browser',
+    identifierGenerator: 'randomized',
+    compact: true,
+    hexadecimalNumbers: true,
+    // Rolldown minifies identifiers already; preserve captured ESM bindings and nested labels.
+    renameVariables: false,
+    renameGlobals: false,
+    renameLabels: false,
+    stringConcealing: true,
+    stringEncoding: true,
+    duplicateLiteralsRemoval: true,
+  };
+
   /** @type {import('vite').Plugin} */
   const plugin = {
     name: 'portfolio-js-confuser',
     apply: 'build',
+    augmentChunkHash(chunk) {
+      if (!chunk.fileName.startsWith('_astro/')) return;
+      return JSON.stringify({ version: jsConfuserPackage.version, options });
+    },
     async generateBundle(_options, bundle) {
       const { obfuscate } = await import('js-confuser');
       await Promise.all(
@@ -17,17 +37,7 @@ const obfuscateClientChunks = () => {
           if (entry.type !== 'chunk' || !entry.fileName.startsWith('_astro/')) return;
           if (!entry.fileName.endsWith('.js')) return;
 
-          const result = await obfuscate(entry.code, {
-            target: 'browser',
-            identifierGenerator: 'randomized',
-            compact: true,
-            hexadecimalNumbers: true,
-            renameVariables: true,
-            renameGlobals: false,
-            stringConcealing: true,
-            stringEncoding: true,
-            duplicateLiteralsRemoval: true,
-          });
+          const result = await obfuscate(entry.code, options);
 
           entry.code = result.code;
         }),
@@ -41,6 +51,8 @@ const obfuscateClientChunks = () => {
 // https://astro.build/config
 export default defineConfig({
   output: 'static',
+  compressHTML: true,
+  logger: process.env.VERCEL ? logHandlers.json() : logHandlers.node(),
   adapter: vercel(),
   integrations: [react()],
   env: {
@@ -57,6 +69,7 @@ export default defineConfig({
         access: 'public',
         default: 1000,
       }),
+      CRON_SECRET: envField.string({ context: 'server', access: 'secret', optional: true }),
       DISCORD_WEBHOOK_URL: envField.string({ context: 'server', access: 'secret', optional: true }),
       PUBLIC_TURNSTILE_SITE_KEY: envField.string({
         context: 'client',
