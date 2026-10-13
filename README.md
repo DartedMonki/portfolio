@@ -13,18 +13,19 @@ nvm use
 
 ## Commands
 
-| Command                    | Action                                                      |
-| :------------------------- | :---------------------------------------------------------- |
-| `npm install`              | Install dependencies                                        |
-| `npm run dev`              | Start the local dev server at `localhost:4321`              |
-| `npm run check`            | Run Astro type and diagnostics checks                       |
-| `npm run build`            | Run checks and build the site into `dist/`                  |
-| `npm run preview`          | Preview the production build locally                        |
-| `npm run lint`             | Run ESLint                                                  |
-| `npm test`                 | Run rate-limiter and Redis heartbeat regression tests       |
-| `npm run test:integration` | Test real Astro HTTP routes with mocked Redis and providers |
-| `npm audit`                | Check dependencies using the public npm audit service       |
-| `npm run format:check`     | Check Prettier formatting                                   |
+| Command                    | Action                                                       |
+| :------------------------- | :----------------------------------------------------------- |
+| `npm install`              | Install dependencies                                         |
+| `npm run dev`              | Start the local dev server at `localhost:4321`               |
+| `npm run check`            | Run Astro, lint, format, unit/API tests and npm audit        |
+| `npm run build`            | Run source checks and build the site into `dist/`            |
+| `npm run preview`          | Preview the production build locally                         |
+| `npm run lint`             | Run ESLint                                                   |
+| `npm test`                 | Run obfuscation, rate-limiter and Redis regression tests     |
+| `npm run test:integration` | Test real Astro HTTP routes with mocked Redis and providers  |
+| `npm run test:browser`     | Test the production client in Chromium with the deployed CSP |
+| `npm audit`                | Check dependencies using the public npm audit service        |
+| `npm run format:check`     | Check Prettier formatting                                    |
 
 ## Vercel Deployment
 
@@ -39,17 +40,23 @@ When importing the repository in Vercel, keep the auto-detected Astro settings:
 | Build Command    | `npm run build`                 |
 | Output Directory | `dist`                          |
 
-The production build runs `astro check` before `astro build`, so Vercel fails early on Astro or TypeScript issues instead of deploying a broken site.
+The production build runs `npm run check` before `astro build`. Astro diagnostics, lint, formatting, unit tests, API integration tests and npm audit must all pass. A reported vulnerability or an unavailable audit service fails the check, including on Vercel. Browser verification is a separate `npm run test:browser` command and is not part of the deployment pipeline.
 
 ### Astro 7 Integration
 
 The project keeps Astro's built-in request pipeline and uses `src/middleware.ts` with the matched `routePattern` and `isPrerendered` context to add consistent request IDs plus no-store and security headers to dynamic API endpoints. API responses expose `X-Request-Id` for correlation with runtime logs. Endpoint authorization remains in the handlers, not in raw-path matching.
 
-Middleware preserves Astro's original request and rendering context, including dev routing and HMR. Request headers are accessed only for dynamic API endpoints, never for prerendered pages. Page GET/HEAD behavior and both locale routes are covered by integration tests. A custom fetch entrypoint is intentionally not used: this app needs request instrumentation, not replacement routing.
+Middleware preserves Astro's request and rendering context, including dev routing and HMR. Request headers are accessed only for dynamic API endpoints, never for prerendered pages. Page GET/HEAD behavior and both locale routes are covered by integration tests.
 
-Astro's stable logger API uses JSON logs on Vercel and readable Node logs locally. The build uses Astro 7's Rust compiler, Vite 8 bundler, and default queued rendering. `compressHTML: true` deliberately retains Astro 6's HTML whitespace behavior to avoid changing rendered text during migration.
+Astro's stable logger API uses JSON logs on Vercel and readable Node logs locally. The build uses Astro 7's Rust compiler, Vite 8 bundler, default queued rendering and HTML compression.
 
-Client chunks retain string obfuscation, but identifier and label rewriting are disabled because they can corrupt Rolldown's captured ESM bindings and nested labels. Rolldown still minifies identifiers. The obfuscator version and options are included in client chunk hashes so compatibility changes invalidate cached assets. Regression tests exercise nested loops, closures, and ESM hydration exports.
+Client JavaScript chunks use pinned `javascript-obfuscator@5.9.0`. Local identifiers and labels are obfuscated alongside base64-encoded string arrays. Public globals, property names and module interfaces stay intact. The offline `obfuscate()` API needs no account, API token or paid plan. Check the [upstream releases](https://github.com/javascript-obfuscator/javascript-obfuscator/releases) and run npm audit when upgrading.
+
+The `browser-no-eval` target preserves the existing CSP without adding `unsafe-eval`. Control-flow flattening, dead-code injection, object-key transformation, self-defending code and extra anti-debugging are intentionally off to limit runtime overhead and behavioral risk. Only `_astro/*.js` client chunks are transformed, after bundler minification; server chunks and assets are untouched, and errors fail the build rather than bypassing obfuscation.
+
+Each chunk gets a deterministic source-derived seed and isolated generated names. The package identity, version, options and seed strategy contribute to chunk hashes so compatibility changes invalidate cached assets. Regression tests check active renaming, chained break/continue labels, captured and shadowed bindings, ESM hydration, repeatable output and CSP-safe execution. Obfuscation is a reverse-engineering deterrent, not a security boundary; credentials and authorization remain server-side.
+
+For production browser verification, install Chromium with `npx playwright install chromium`, build with `npm run build`, then run `npm run test:browser`. The test serves only built static files, applies `vercel.json` security headers, and checks both languages on desktop and mobile. It checks hydration, local image loading, dialogs, WebGL rendering and animation, and message submission responses. APIs and third-party requests, including Turnstile and the remote avatar, are mocked, so no real messages are sent or Redis quotas consumed.
 
 The public pages remain prerendered and the React experience keeps its existing hydration. Route caching is intentionally not enabled: the pages are already static, while visitor IPs, authenticated maintenance requests, messages, and quota decisions must never be shared between users. Sessions, Astro DB replacements, Markdown pipelines, and Hono are not needed for the current application.
 
@@ -121,13 +128,13 @@ Each request consumes one token in each applicable bucket. Buckets start full an
 | IP network (`/24` IPv4, `/64` IPv6) | 20             | 1 token every 3 minutes  |
 | Normalized message hash             | 3              | 1 token every 20 minutes |
 
-The identity buckets preserve their previous burst capacities and average rates. The request guard and delivery budget are deliberately tighter for a low-volume portfolio on free plans. A depleted bucket returns `429` with `Retry-After` pointing to the next refill. Redis errors and SDK timeouts return `503` with `Retry-After: 60`; only genuine quota exhaustion is logged as `portfolio_message_rate_limited`.
+The identity buckets limit bursts and average request rates. The request guard and delivery budget constrain traffic for a low-volume portfolio on free plans. A depleted bucket returns `429` with `Retry-After` pointing to the next refill. Redis errors and SDK timeouts return `503` with `Retry-After: 60`; only genuine quota exhaustion is logged as `portfolio_message_rate_limited`.
 
 The delivery bucket permits at most approximately 92 attempts over 24 hours without a database reset: 20 initial tokens plus 72 refills. With one email recipient, this leaves headroom below [Resend's free limits](https://resend.com/docs/knowledge-base/account-quotas-and-limits) of 100 emails per UTC day and 3,000 per month. Multiple recipients, inbound emails, and other apps on the same Resend account also consume that account quota; this limiter does not track their usage.
 
 SDK analytics are disabled to avoid an extra Redis command for every check, including cached denials. A normal verified submission checks six token buckets, roughly 24 Redis commands according to [Upstash's SDK cost model](https://upstash.com/docs/redis/sdks/ratelimit-ts/costs), plus one heartbeat write per day. Upstash's [free Redis plan](https://upstash.com/pricing/redis) allows 500,000 commands per month. Ordinary portfolio traffic fits comfortably, but attacks, cold-start denials, other Redis consumers, and visitor-IP Function invocations are not globally capped by these message buckets. Monitor account usage; these settings are not an absolute guarantee against every free-tier limit.
 
-Token buckets use the separate `portfolio:message:token-bucket:v1:` namespace to avoid collisions with sliding-window keys. Deploying this change starts fresh counters once; old counters expire naturally.
+Token-bucket state uses the `portfolio:message:token-bucket:v1:` namespace. Keep the namespace stable across deployments to preserve quota state.
 
 Deployments configured with the same Redis database and namespace share the request and delivery budgets. Separate databases do not share counters. Do not reset the database or change the prefix to bypass quotas; doing so replenishes every bucket.
 

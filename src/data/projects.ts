@@ -35,13 +35,26 @@ export const projects: Project[] = [
     },
     technologies: ['Next.js', 'Payload CMS', 'Tailwind CSS'],
     images: [
-      { src: '/images/prime-edu-center-1.png', alt: 'Prime Education Center bilingual landing page', priority: true },
+      {
+        src: '/images/prime-edu-center-1.png',
+        alt: 'Prime Education Center bilingual landing page',
+        priority: true,
+      },
       { src: '/images/prime-edu-center-2.png', alt: 'Prime Education Center B2B landing page' },
       { src: '/images/prime-edu-center-3.png', alt: 'Prime Education Center B2C landing page' },
       { src: '/images/prime-edu-center-4.png', alt: 'Prime Education Center curriculum approach' },
-      { src: '/images/prime-edu-center-5.png', alt: 'Prime Education Center home learning catalogue' },
-      { src: '/images/prime-edu-center-6.png', alt: 'Prime Education Center Payload CMS media library' },
-      { src: '/images/prime-edu-center-7.png', alt: 'Prime Education Center Payload CMS landing page editor' },
+      {
+        src: '/images/prime-edu-center-5.png',
+        alt: 'Prime Education Center home learning catalogue',
+      },
+      {
+        src: '/images/prime-edu-center-6.png',
+        alt: 'Prime Education Center Payload CMS media library',
+      },
+      {
+        src: '/images/prime-edu-center-7.png',
+        alt: 'Prime Education Center Payload CMS landing page editor',
+      },
     ],
     link: {
       href: 'https://primeeducenter.com/',
