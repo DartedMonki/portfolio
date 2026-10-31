@@ -317,7 +317,19 @@ export const projects: Project[] = [
     },
     technologies: ['JavaScript', 'HTML', 'Tailwind CSS'],
     images: [
-      { src: '/images/ipvision.png', alt: 'Intermedia Prima Vision Home Page', priority: true },
+      {
+        src: '/images/ipvision-home.png',
+        alt: 'Intermedia Prima Vision live homepage with licensing navigation and event highlights',
+        priority: true,
+      },
+      {
+        src: '/images/ipvision-characters.png',
+        alt: 'Intermedia Prima Vision licensed character portfolio on the live website',
+      },
+      {
+        src: '/images/ipvision-events.png',
+        alt: 'Intermedia Prima Vision latest character experiences, live shows, and events',
+      },
     ],
     link: {
       href: 'https://ipvision.id/',

@@ -4,21 +4,27 @@ Refreshed on 31 October 2026. Screenshots show the actual application interfaces
 Authenticated screens use fictional customers, accounts, orders, invoices, and
 attendance records in isolated local copies of the source repositories.
 
-| Project                | Source                               | Revision                                   | Screens                                                                                                                                            |
-| ---------------------- | ------------------------------------ | ------------------------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Asianet Smart WFM      | `technovaid/asianet-dtx-wfm-app`     | `c305928f66371761934f74f052ac970feaac54bb` | Ongoing work orders, work order details, installation activity filter                                                                              |
-| Asianet WFM Dashboard  | `technovaid/wfm-dashboard`           | `7221b8f778274aa8aed8cef6bdbf7205c1e9e35d` | Monthly analytics, ongoing work orders, service site directory                                                                                     |
-| GradePlus App          | `technovaid/asianet-isp-csp`         | `a3d678f768d49bde1a93fe47c1894db4df5c9054` | Customer home, installation orders, subscription billing                                                                                           |
-| GradePlus Dashboard    | `technovaid/asianet-isp-rsp`         | `b5949700df312345ce7fc03f839878f0548b7c2e` | Analytics dashboard, customer directory, invoices                                                                                                  |
-| GEP Media              | `DartedMonki/alto-lms`               | `96de70f00032c961dfc63c5e62201913e3ea1e36` | Administration dashboard, populated ebook list, private tryout catalogue and exam, public registration and exam, student PDF reader, QR attendance |
-| GEP Media landing page | <https://www.gepmedia.id/>           | Live deployment at capture time            | Landing page                                                                                                                                       |
-| Pura Pura Bike         | <https://pura-pura-bike.vercel.app/> | Live deployment at capture time            | Home, activities, collaborators, statistics, contact                                                                                               |
+| Project                 | Source                               | Revision                                   | Screens                                                                                                                                            |
+| ----------------------- | ------------------------------------ | ------------------------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Asianet Smart WFM       | `technovaid/asianet-dtx-wfm-app`     | `c305928f66371761934f74f052ac970feaac54bb` | Ongoing work orders, work order details, installation activity filter                                                                              |
+| Asianet WFM Dashboard   | `technovaid/wfm-dashboard`           | `7221b8f778274aa8aed8cef6bdbf7205c1e9e35d` | Monthly analytics, ongoing work orders, service site directory                                                                                     |
+| GradePlus App           | `technovaid/asianet-isp-csp`         | `a3d678f768d49bde1a93fe47c1894db4df5c9054` | Customer home, installation orders, subscription billing                                                                                           |
+| GradePlus Dashboard     | `technovaid/asianet-isp-rsp`         | `b5949700df312345ce7fc03f839878f0548b7c2e` | Analytics dashboard, customer directory, invoices                                                                                                  |
+| GEP Media               | `DartedMonki/alto-lms`               | `96de70f00032c961dfc63c5e62201913e3ea1e36` | Administration dashboard, populated ebook list, private tryout catalogue and exam, public registration and exam, student PDF reader, QR attendance |
+| GEP Media landing page  | <https://www.gepmedia.id/>           | Live deployment at capture time            | Landing page                                                                                                                                       |
+| Pura Pura Bike          | <https://pura-pura-bike.vercel.app/> | Live deployment at capture time            | Home, activities, collaborators, statistics, contact                                                                                               |
+| Intermedia Prima Vision | <https://ipvision.id/>               | Live deployment at capture time            | Homepage, licensed character portfolio, latest events                                                                                              |
 
 Mobile screens were captured at 390 × 844 CSS pixels, desktop screens at
 1440 × 900, with a device pixel ratio of 2. Flutter captures use the existing
 screens with mock providers, following the applications' widget-test patterns.
 Dashboard captures replace session and API data locally. No production accounts
 or backend writes are involved.
+
+Intermedia Prima Vision was captured directly from its live website. The homepage
+ends at the hero boundary; character and event screenshots use the complete
+section content with a 24-pixel margin, keeping cards and their captions intact.
+Their heights follow the content rather than the viewport.
 
 The WFM dashboard capture uses its existing authentication and RTK Query flows
 with a fictional operations user and intercepted API responses. It waits for
