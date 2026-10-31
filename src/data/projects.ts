@@ -28,6 +28,45 @@ export const FIRST_PROJECT_IS_DARK = false;
 
 export const projects: Project[] = [
   {
+    title: 'CSLatih',
+    description: {
+      en: 'A multi-workspace customer-service training platform with AI role-play exams, pre-test and post-test scoring, knowledge-grounded coaching, and AI-assisted module authoring. Each brand gets its own hostname, theme, and content, used here by HealthyGo and Bekelin.',
+      id: 'Platform pelatihan customer service multi-workspace dengan ujian role-play AI, penilaian pre-test dan post-test, coaching berbasis pengetahuan, serta pembuatan modul berbantuan AI. Setiap brand memiliki hostname, tema, dan konten sendiri, digunakan oleh HealthyGo dan Bekelin.',
+    },
+    technologies: ['Next.js', 'React', 'Tailwind CSS', 'Prisma', 'PostgreSQL', 'Anthropic API'],
+    images: [
+      {
+        src: '/images/cslatih-ai-chat.png',
+        alt: 'CSLatih AI role-play exam chat for HealthyGo and Bekelin in mobile view with mock customer conversations',
+        priority: true,
+      },
+      {
+        src: '/images/cslatih-healthygo-dashboard.png',
+        alt: 'CSLatih manager dashboard for HealthyGo with team scores, exam readiness, and agent progress',
+      },
+      {
+        src: '/images/cslatih-healthygo-modules.png',
+        alt: 'CSLatih module authoring for HealthyGo with AI draft generation and the active module list',
+      },
+      {
+        src: '/images/cslatih-healthygo-knowledge.png',
+        alt: 'CSLatih knowledge base for HealthyGo with required product, SOP, and policy documents',
+      },
+      {
+        src: '/images/cslatih-bekelin-dashboard.png',
+        alt: 'CSLatih manager dashboard for Bekelin with team scores, exam readiness, and agent progress',
+      },
+      {
+        src: '/images/cslatih-bekelin-modules.png',
+        alt: 'CSLatih module authoring for Bekelin with AI draft generation and the active module list',
+      },
+      {
+        src: '/images/cslatih-bekelin-knowledge.png',
+        alt: 'CSLatih knowledge base for Bekelin with required product, SOP, and policy documents',
+      },
+    ],
+  },
+  {
     title: 'Asianet Smart WFM',
     description: {
       en: 'A mobile workforce management app for field technicians, covering installation and maintenance work orders, site details, activity tracking, and field reporting.',
