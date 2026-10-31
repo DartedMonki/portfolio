@@ -2,7 +2,7 @@ import 'swiper/css';
 import 'swiper/css/effect-cards';
 
 import { memo, useEffect, useState } from 'react';
-import { EffectCards, Virtual } from 'swiper/modules';
+import { A11y, EffectCards, Keyboard } from 'swiper/modules';
 import { Swiper, SwiperSlide } from 'swiper/react';
 
 import { getPortfolioProjects } from '../data/projects';
@@ -110,7 +110,7 @@ const ProjectHeader = memo(
       >
         {description}
       </p>
-      <p className={`mt-3 mb-0 text-sm font-bold ${isDark ? 'text-white/50' : 'text-neutral-400'}`}>
+      <p className={`mt-3 mb-0 text-sm font-bold ${isDark ? 'text-white/70' : 'text-neutral-600'}`}>
         {technologies.join(' • ')}
       </p>
     </header>
@@ -188,8 +188,12 @@ const ProjectSlides = memo(
       <Swiper
         effect="cards"
         grabCursor={true}
-        modules={[EffectCards, Virtual]}
-        className="swiper"
+        modules={[A11y, EffectCards, Keyboard]}
+        keyboard={{ enabled: true, onlyInViewport: true, pageUpDown: false }}
+        role="group"
+        aria-label={project.title}
+        tabIndex={0}
+        className="swiper focus-visible:outline-2 focus-visible:outline-offset-8 focus-visible:outline-blue-600"
         style={{ ...dimensions, marginLeft: 'auto', marginRight: 'auto', willChange: 'transform' }}
         watchSlidesProgress={true}
         speed={600}

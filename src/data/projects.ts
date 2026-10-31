@@ -28,6 +28,121 @@ export const FIRST_PROJECT_IS_DARK = false;
 
 export const projects: Project[] = [
   {
+    title: 'Asianet Smart WFM',
+    description: {
+      en: 'A mobile workforce management app for field technicians, covering installation and maintenance work orders, site details, activity tracking, and field reporting.',
+      id: 'Aplikasi mobile manajemen tenaga kerja lapangan untuk teknisi, mencakup work order instalasi dan pemeliharaan, detail lokasi, pelacakan aktivitas, serta pelaporan pekerjaan.',
+    },
+    technologies: ['Flutter', 'Dart', 'Riverpod', 'Go (Gin)', 'MySQL', 'Redis'],
+    images: [
+      {
+        src: '/images/asianet-swfm-1.png',
+        alt: 'Asianet Smart WFM ongoing work orders with installation and troubleshooting tasks',
+        priority: true,
+      },
+      {
+        src: '/images/asianet-swfm-2.png',
+        alt: 'Asianet Smart WFM work order details with site, team, and schedule information',
+      },
+      {
+        src: '/images/asianet-swfm-3.png',
+        alt: 'Asianet Smart WFM installation work orders filtered by activity',
+      },
+    ],
+  },
+  {
+    title: 'Asianet WFM Dashboard',
+    description: {
+      en: 'A workforce operations dashboard for coordinating installation and maintenance work orders, managing service sites and field teams, and monitoring completion trends by region, vendor, and device brand.',
+      id: 'Dashboard operasional tenaga kerja untuk mengoordinasikan work order instalasi dan pemeliharaan, mengelola lokasi layanan serta tim lapangan, dan memantau tren penyelesaian berdasarkan wilayah, vendor, serta merek perangkat.',
+    },
+    technologies: [
+      'Next.js',
+      'TypeScript',
+      'Tailwind CSS',
+      'Redux Toolkit',
+      'RTK Query',
+      'Recharts',
+      'Go (Gin)',
+      'MySQL',
+      'Redis',
+    ],
+    images: [
+      {
+        src: '/images/asianet-wfm-dashboard-1.png',
+        alt: 'Asianet WFM monthly analytics with work order totals, completion rates, and installation trends',
+      },
+      {
+        src: '/images/asianet-wfm-dashboard-2.png',
+        alt: 'Asianet WFM ongoing work orders with installation statuses, assigned technicians, and booking schedules',
+      },
+      {
+        src: '/images/asianet-wfm-dashboard-3.png',
+        alt: 'Asianet WFM service site directory with areas, client details, contacts, and active statuses',
+      },
+    ],
+  },
+  {
+    title: 'GradePlus App',
+    description: {
+      en: 'A customer selfcare app for GRADE+ internet subscribers to monitor their connection, manage installations and orders, view bills, make payments, and contact support.',
+      id: 'Aplikasi selfcare pelanggan internet GRADE+ untuk memantau koneksi, mengelola instalasi dan pesanan, melihat tagihan, melakukan pembayaran, serta menghubungi dukungan pelanggan.',
+    },
+    technologies: ['Flutter', 'Dart', 'Riverpod', 'Firebase', 'Go', 'gRPC', 'MariaDB', 'Kafka'],
+    images: [
+      {
+        src: '/images/gradeplus-app-1.png',
+        alt: 'GradePlus customer home with active internet package and network status',
+      },
+      {
+        src: '/images/gradeplus-app-2.png',
+        alt: 'GradePlus installation orders with package, location, and appointment details',
+      },
+      {
+        src: '/images/gradeplus-app-3.png',
+        alt: 'GradePlus billing overview with internet subscription invoices',
+      },
+    ],
+    link: {
+      href: 'https://app.gradeplus.id/',
+      text: 'Website',
+      type: 'website',
+    },
+  },
+  {
+    title: 'GradePlus Dashboard',
+    description: {
+      en: 'A reseller and operations portal for GRADE+, bringing customer management, sales leads, installation orders, product catalogues, invoicing, and payments into one permission-based dashboard.',
+      id: 'Portal reseller dan operasional GRADE+ yang menyatukan pengelolaan pelanggan, prospek penjualan, pesanan instalasi, katalog produk, invoice, serta pembayaran dalam satu dashboard berbasis hak akses.',
+    },
+    technologies: [
+      'Next.js',
+      'TypeScript',
+      'Tailwind CSS',
+      'TanStack Query',
+      'Go',
+      'gRPC',
+      'MariaDB',
+      'Redis',
+      'Kafka',
+      'Keycloak',
+    ],
+    images: [
+      {
+        src: '/images/gradeplus-dashboard-1.png',
+        alt: 'GradePlus operations dashboard with customer, order, and billing metrics',
+      },
+      {
+        src: '/images/gradeplus-dashboard-2.png',
+        alt: 'GradePlus customer directory with subscription packages and service statuses',
+      },
+      {
+        src: '/images/gradeplus-dashboard-3.png',
+        alt: 'GradePlus invoice management with payment statuses and billing filters',
+      },
+    ],
+  },
+  {
     title: 'Prime Education Center',
     description: {
       en: 'A bilingual education platform for schools, foundations, and families, with B2B and B2C learning experiences managed through Payload CMS.',
@@ -83,21 +198,53 @@ export const projects: Project[] = [
     },
   },
   {
-    title: 'Pura Pura Bike',
+    title: 'GEP Media',
     description: {
-      en: 'A responsive community website for a cycling group, designed to present activities, collaborations, statistics, and contact information clearly.',
-      id: 'Situs komunitas responsif untuk grup bersepeda, dirancang untuk menampilkan aktivitas, kolaborasi, statistik, dan informasi kontak dengan jelas.',
+      en: 'An education platform for GEP Media and Alumni Tutorial (ALTO), with private and public UTBK tryouts, assessments, a student ebook reader, role-based dashboards, and QR attendance.',
+      id: 'Platform pendidikan GEP Media dan Alumni Tutorial (ALTO), dengan tryout UTBK privat dan publik, asesmen, reader ebook siswa, dashboard berbasis peran, serta absensi QR.',
     },
-    technologies: ['Next.js', 'Tailwind CSS'],
+    technologies: ['Next.js', 'TypeScript', 'Tailwind CSS', 'NextAuth.js', 'Prisma', 'PostgreSQL'],
     images: [
-      { src: '/images/pura-pura-bike-1.png', alt: 'Pura Pura Bike Hero', priority: true },
-      { src: '/images/pura-pura-bike-2.png', alt: 'Pura Pura Bike Kegiatan Rutin' },
-      { src: '/images/pura-pura-bike-3.png', alt: 'Pura Pura Bike Kolaborator' },
-      { src: '/images/pura-pura-bike-4.png', alt: 'Pura Pura Bike Statistik Kami' },
-      { src: '/images/pura-pura-bike-5.png', alt: 'Pura Pura Bike Hubungi Kami' },
+      {
+        src: '/images/gepmedia-1.png',
+        alt: 'GEP Media UTBK preparation landing page',
+        priority: true,
+      },
+      {
+        src: '/images/gepmedia-2.png',
+        alt: 'GEP Media administration dashboard and attendance metrics',
+      },
+      {
+        src: '/images/gepmedia-ebooks.png',
+        alt: 'GEP Media populated ebook list with learning materials and readership statistics',
+      },
+      {
+        src: '/images/gepmedia-tryouts-private.png',
+        alt: 'GEP Media student portal with available private UTBK tryouts and attempt statuses',
+      },
+      {
+        src: '/images/gepmedia-tryout-private-exam.png',
+        alt: 'GEP Media private UTBK exam with questions, saved answers, navigation, and group timer',
+      },
+      {
+        src: '/images/gepmedia-tryout-public.png',
+        alt: 'GEP Media public tryout registration with school and participant details',
+      },
+      {
+        src: '/images/gepmedia-tryout-public-exam.png',
+        alt: 'GEP Media public UTBK exam with timed question groups and saved answers',
+      },
+      {
+        src: '/images/gepmedia-ebook-reader.png',
+        alt: 'GEP Media student PDF reader displaying a lesson with page navigation, zoom, and watermark',
+      },
+      {
+        src: '/images/gepmedia-4.png',
+        alt: 'GEP Media QR attendance with employee check-in monitoring',
+      },
     ],
     link: {
-      href: 'https://pura-pura-bike.vercel.app/',
+      href: 'https://www.gepmedia.id/',
       text: 'Website',
       type: 'website',
     },
@@ -123,20 +270,21 @@ export const projects: Project[] = [
     },
   },
   {
-    title: 'GEP Media',
+    title: 'Pura Pura Bike',
     description: {
-      en: 'A media and education platform with dashboard, ebook, Learning Management System (LMS), and QR attendance features implemented with Next.js, Prisma, and PostgreSQL.',
-      id: 'Platform media dan edukasi dengan dashboard, ebook, Learning Management System (LMS), dan fitur absensi QR, dibangun menggunakan Next.js, Prisma, dan PostgreSQL.',
+      en: 'A responsive community website for a cycling group, designed to present activities, collaborations, statistics, and contact information clearly.',
+      id: 'Situs komunitas responsif untuk grup bersepeda, dirancang untuk menampilkan aktivitas, kolaborasi, statistik, dan informasi kontak dengan jelas.',
     },
-    technologies: ['Next.js', 'Tailwind CSS', 'Prisma', 'PostgreSQL'],
+    technologies: ['Next.js', 'Tailwind CSS'],
     images: [
-      { src: '/images/gepmedia-1.png', alt: 'GEP Hero', priority: true },
-      { src: '/images/gepmedia-2.png', alt: 'GEP Dashboard' },
-      { src: '/images/gepmedia-3.png', alt: 'GEP Ebook' },
-      { src: '/images/gepmedia-4.png', alt: 'GEP QR Attendance' },
+      { src: '/images/pura-pura-bike-1.png', alt: 'Pura Pura Bike Hero', priority: true },
+      { src: '/images/pura-pura-bike-2.png', alt: 'Pura Pura Bike Kegiatan Rutin' },
+      { src: '/images/pura-pura-bike-3.png', alt: 'Pura Pura Bike Kolaborator' },
+      { src: '/images/pura-pura-bike-4.png', alt: 'Pura Pura Bike Statistik Kami' },
+      { src: '/images/pura-pura-bike-5.png', alt: 'Pura Pura Bike Hubungi Kami' },
     ],
     link: {
-      href: 'https://www.gepmedia.id/',
+      href: 'https://pura-pura-bike.vercel.app/',
       text: 'Website',
       type: 'website',
     },
@@ -169,7 +317,19 @@ export const projects: Project[] = [
     },
     technologies: ['JavaScript', 'HTML', 'Tailwind CSS'],
     images: [
-      { src: '/images/ipvision.png', alt: 'Intermedia Prima Vision Home Page', priority: true },
+      {
+        src: '/images/ipvision-home.png',
+        alt: 'Intermedia Prima Vision live homepage with licensing navigation and event highlights',
+        priority: true,
+      },
+      {
+        src: '/images/ipvision-characters.png',
+        alt: 'Intermedia Prima Vision licensed character portfolio on the live website',
+      },
+      {
+        src: '/images/ipvision-events.png',
+        alt: 'Intermedia Prima Vision latest character experiences, live shows, and events',
+      },
     ],
     link: {
       href: 'https://ipvision.id/',
