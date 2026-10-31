@@ -168,8 +168,8 @@ export const projects: Project[] = [
   {
     title: 'GEP Media',
     description: {
-      en: 'An education platform for GEP Media and Alumni Tutorial (ALTO), with UTBK tryouts, assessments, ebooks, role-based dashboards, and QR attendance for students and employees.',
-      id: 'Platform pendidikan GEP Media dan Alumni Tutorial (ALTO), dengan tryout UTBK, asesmen, ebook, dashboard berbasis peran, serta absensi QR untuk siswa dan karyawan.',
+      en: 'An education platform for GEP Media and Alumni Tutorial (ALTO), with private and public UTBK tryouts, assessments, a student ebook reader, role-based dashboards, and QR attendance.',
+      id: 'Platform pendidikan GEP Media dan Alumni Tutorial (ALTO), dengan tryout UTBK privat dan publik, asesmen, reader ebook siswa, dashboard berbasis peran, serta absensi QR.',
     },
     technologies: ['Next.js', 'TypeScript', 'Tailwind CSS', 'NextAuth.js', 'Prisma', 'PostgreSQL'],
     images: [
@@ -183,8 +183,28 @@ export const projects: Project[] = [
         alt: 'GEP Media administration dashboard and attendance metrics',
       },
       {
-        src: '/images/gepmedia-3.png',
-        alt: 'GEP Media ebook management with learning materials and readership statistics',
+        src: '/images/gepmedia-ebooks.png',
+        alt: 'GEP Media populated ebook list with learning materials and readership statistics',
+      },
+      {
+        src: '/images/gepmedia-tryouts-private.png',
+        alt: 'GEP Media student portal with available private UTBK tryouts and attempt statuses',
+      },
+      {
+        src: '/images/gepmedia-tryout-private-exam.png',
+        alt: 'GEP Media private UTBK exam with questions, saved answers, navigation, and group timer',
+      },
+      {
+        src: '/images/gepmedia-tryout-public.png',
+        alt: 'GEP Media public tryout registration with school and participant details',
+      },
+      {
+        src: '/images/gepmedia-tryout-public-exam.png',
+        alt: 'GEP Media public UTBK exam with timed question groups and saved answers',
+      },
+      {
+        src: '/images/gepmedia-ebook-reader.png',
+        alt: 'GEP Media student PDF reader displaying a lesson with page navigation, zoom, and watermark',
       },
       {
         src: '/images/gepmedia-4.png',
