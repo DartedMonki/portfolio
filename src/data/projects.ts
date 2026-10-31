@@ -36,9 +36,13 @@ export const projects: Project[] = [
     technologies: ['Next.js', 'React', 'Tailwind CSS', 'Prisma', 'PostgreSQL', 'Anthropic API'],
     images: [
       {
+        src: '/images/cslatih-ai-chat.png',
+        alt: 'CSLatih AI role-play exam chat for HealthyGo and Bekelin in mobile view with mock customer conversations',
+        priority: true,
+      },
+      {
         src: '/images/cslatih-healthygo-dashboard.png',
         alt: 'CSLatih manager dashboard for HealthyGo with team scores, exam readiness, and agent progress',
-        priority: true,
       },
       {
         src: '/images/cslatih-healthygo-modules.png',
