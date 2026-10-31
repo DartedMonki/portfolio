@@ -51,6 +51,38 @@ export const projects: Project[] = [
     ],
   },
   {
+    title: 'Asianet WFM Dashboard',
+    description: {
+      en: 'A workforce operations dashboard for coordinating installation and maintenance work orders, managing service sites and field teams, and monitoring completion trends by region, vendor, and device brand.',
+      id: 'Dashboard operasional tenaga kerja untuk mengoordinasikan work order instalasi dan pemeliharaan, mengelola lokasi layanan serta tim lapangan, dan memantau tren penyelesaian berdasarkan wilayah, vendor, serta merek perangkat.',
+    },
+    technologies: [
+      'Next.js',
+      'TypeScript',
+      'Tailwind CSS',
+      'Redux Toolkit',
+      'RTK Query',
+      'Recharts',
+      'Go (Gin)',
+      'MySQL',
+      'Redis',
+    ],
+    images: [
+      {
+        src: '/images/asianet-wfm-dashboard-1.png',
+        alt: 'Asianet WFM monthly analytics with work order totals, completion rates, and installation trends',
+      },
+      {
+        src: '/images/asianet-wfm-dashboard-2.png',
+        alt: 'Asianet WFM ongoing work orders with installation statuses, assigned technicians, and booking schedules',
+      },
+      {
+        src: '/images/asianet-wfm-dashboard-3.png',
+        alt: 'Asianet WFM service site directory with areas, client details, contacts, and active statuses',
+      },
+    ],
+  },
+  {
     title: 'GradePlus App',
     description: {
       en: 'A customer selfcare app for GRADE+ internet subscribers to monitor their connection, manage installations and orders, view bills, make payments, and contact support.',
