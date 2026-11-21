@@ -1,6 +1,6 @@
 import type { Locale } from './locales';
 
-export type ProjectLinkType = 'github' | 'website';
+export type ProjectLinkType = 'github' | 'website' | 'store';
 
 export interface ProjectImage {
   src: string;
@@ -20,7 +20,7 @@ export interface Project {
   technologies: string[];
   coverSize: [width: number, height: number];
   images: [ProjectImage, ...ProjectImage[]];
-  link?: ProjectLink;
+  links?: ProjectLink[];
 }
 
 export const FIRST_PROJECT_IS_DARK = false;
@@ -87,6 +87,13 @@ export const projects: Project[] = [
         alt: 'Asianet Smart WFM installation work orders filtered by activity',
       },
     ],
+    links: [
+      {
+        href: 'https://play.google.com/store/apps/details?id=com.amt_wfm_assurance&hl=en',
+        text: 'Google Play',
+        type: 'store',
+      },
+    ],
   },
   {
     title: 'Asianet WFM Dashboard',
@@ -143,11 +150,19 @@ export const projects: Project[] = [
         alt: 'GradePlus billing overview with internet subscription invoices',
       },
     ],
-    link: {
-      href: 'https://app.gradeplus.id/',
-      text: 'Website',
-      type: 'website',
-    },
+    links: [
+      {
+        href: 'https://play.google.com/store/apps/details?id=id.gradeplus.csp&hl=en',
+        text: 'Google Play',
+        type: 'store',
+      },
+      {
+        href: 'https://apps.apple.com/id/app/grade/id6791633114',
+        text: 'App Store',
+        type: 'store',
+      },
+      { href: 'https://app.gradeplus.id/', text: 'Website', type: 'website' },
+    ],
   },
   {
     title: 'GradePlus Dashboard',
@@ -212,11 +227,13 @@ export const projects: Project[] = [
         alt: 'Prime Education Center Payload CMS landing page editor',
       },
     ],
-    link: {
-      href: 'https://primeeducenter.com/',
-      text: 'Website',
-      type: 'website',
-    },
+    links: [
+      {
+        href: 'https://primeeducenter.com/',
+        text: 'Website',
+        type: 'website',
+      },
+    ],
   },
   {
     title: 'Wingbox',
@@ -233,11 +250,13 @@ export const projects: Project[] = [
       { src: '/images/wingbox-about.png', alt: 'About Wingbox' },
       { src: '/images/wingbox-login.png', alt: 'Wingbox Login Page' },
     ],
-    link: {
-      href: 'https://wingbox.id',
-      text: 'Website',
-      type: 'website',
-    },
+    links: [
+      {
+        href: 'https://wingbox.id',
+        text: 'Website',
+        type: 'website',
+      },
+    ],
   },
   {
     title: 'GEP Media',
@@ -286,11 +305,13 @@ export const projects: Project[] = [
         alt: 'GEP Media QR attendance with employee check-in monitoring',
       },
     ],
-    link: {
-      href: 'https://www.gepmedia.id/',
-      text: 'Website',
-      type: 'website',
-    },
+    links: [
+      {
+        href: 'https://www.gepmedia.id/',
+        text: 'Website',
+        type: 'website',
+      },
+    ],
   },
   {
     title: 'Pulse AI',
@@ -307,11 +328,13 @@ export const projects: Project[] = [
       { src: '/images/pulse-ai-4.png', size: [1897, 915], alt: 'Pulse AI Ad Accounts' },
       { src: '/images/pulse-ai-5.png', size: [1897, 915], alt: 'Pulse AI Ad Account Details' },
     ],
-    link: {
-      href: 'https://pulse.technovasolusi.id/',
-      text: 'Website',
-      type: 'website',
-    },
+    links: [
+      {
+        href: 'https://pulse.technovasolusi.id/',
+        text: 'Website',
+        type: 'website',
+      },
+    ],
   },
   {
     title: 'Pura Pura Bike',
@@ -344,11 +367,13 @@ export const projects: Project[] = [
         alt: 'Pura Pura Bike — Hubungi Kami',
       },
     ],
-    link: {
-      href: 'https://pura-pura-bike.vercel.app/',
-      text: 'Website',
-      type: 'website',
-    },
+    links: [
+      {
+        href: 'https://pura-pura-bike.vercel.app/',
+        text: 'Website',
+        type: 'website',
+      },
+    ],
   },
   {
     title: 'RSMS Emotion Shareflow',
@@ -365,11 +390,13 @@ export const projects: Project[] = [
       { src: '/images/rsms-4.png', size: [1896, 912], alt: 'RSMS Revenue Summary 1' },
       { src: '/images/rsms-5.png', size: [1896, 913], alt: 'RSMS Revenue Summary 2' },
     ],
-    link: {
-      href: 'https://rsms.technovasolusi.id/',
-      text: 'Website',
-      type: 'website',
-    },
+    links: [
+      {
+        href: 'https://rsms.technovasolusi.id/',
+        text: 'Website',
+        type: 'website',
+      },
+    ],
   },
   {
     title: 'Intermedia Prima Vision',
@@ -395,11 +422,13 @@ export const projects: Project[] = [
         alt: 'Intermedia Prima Vision latest character experiences, live shows, and events',
       },
     ],
-    link: {
-      href: 'https://ipvision.id/',
-      text: 'Website',
-      type: 'website',
-    },
+    links: [
+      {
+        href: 'https://ipvision.id/',
+        text: 'Website',
+        type: 'website',
+      },
+    ],
   },
   {
     title: 'Heetung',
@@ -446,11 +475,13 @@ export const projects: Project[] = [
       { src: '/images/world-2.png', alt: 'Castle Journey World 2' },
       { src: '/images/boss.png', alt: 'Castle Journey Boss Battle' },
     ],
-    link: {
-      href: 'https://github.com/DartedMonki/castle-journey',
-      text: 'Github Repository',
-      type: 'github',
-    },
+    links: [
+      {
+        href: 'https://github.com/DartedMonki/castle-journey',
+        text: 'Github Repository',
+        type: 'github',
+      },
+    ],
   },
 ];
 
