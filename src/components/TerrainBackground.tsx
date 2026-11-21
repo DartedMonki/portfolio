@@ -1114,7 +1114,7 @@ const TerrainBackground = ({
             onClick={() => handleSettingsOpenChange(false)}
           />
           <section
-            className="absolute top-0 left-0 h-full w-4/5 max-w-87.5 overflow-y-auto bg-black/95 p-6 text-white shadow-2xl transition-transform duration-300 sm:w-87.5"
+            className="absolute top-0 left-0 h-full w-4/5 max-w-87.5 overflow-y-auto overscroll-y-contain bg-black/95 p-6 text-white shadow-2xl transition-transform duration-300 sm:w-87.5"
             aria-labelledby="terrain-settings-title"
           >
             <div className="mb-6 flex items-center justify-between gap-4">
