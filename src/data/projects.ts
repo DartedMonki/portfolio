@@ -1,6 +1,7 @@
 import type { Locale } from './locales';
 
-export type ProjectLinkType = 'github' | 'website' | 'store';
+export type StoreLinkType = 'google-play' | 'app-store';
+export type ProjectLinkType = 'github' | 'website' | StoreLinkType;
 
 export interface ProjectImage {
   src: string;
@@ -91,7 +92,7 @@ export const projects: Project[] = [
       {
         href: 'https://play.google.com/store/apps/details?id=com.amt_wfm_assurance&hl=en',
         text: 'Google Play',
-        type: 'store',
+        type: 'google-play',
       },
     ],
   },
@@ -152,14 +153,14 @@ export const projects: Project[] = [
     ],
     links: [
       {
-        href: 'https://play.google.com/store/apps/details?id=id.gradeplus.csp&hl=en',
-        text: 'Google Play',
-        type: 'store',
-      },
-      {
         href: 'https://apps.apple.com/id/app/grade/id6791633114',
         text: 'App Store',
-        type: 'store',
+        type: 'app-store',
+      },
+      {
+        href: 'https://play.google.com/store/apps/details?id=id.gradeplus.csp&hl=en',
+        text: 'Google Play',
+        type: 'google-play',
       },
       { href: 'https://app.gradeplus.id/', text: 'Website', type: 'website' },
     ],

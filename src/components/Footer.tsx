@@ -138,6 +138,9 @@ const Footer = ({ locale, onSubmitMessage }: FooterProps) => {
         </div>
       </div>
 
+      <p className="mx-auto w-full max-w-7xl px-6 pb-4 text-xs text-white/60 lg:px-10">
+        {copy.storeTrademarkCredits}
+      </p>
       <div className="mx-auto flex w-full max-w-7xl flex-col items-start justify-between gap-3 px-6 pb-10 text-[0.65rem] tracking-[0.18em] text-white/60 uppercase sm:flex-row sm:items-center sm:text-xs lg:px-10">
         <span>© {year} afriyadi y. r.</span>
         <span>{copy.builtWith}</span>
