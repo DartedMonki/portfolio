@@ -1,4 +1,5 @@
 import { lazy, Suspense, useCallback, useEffect, useRef, useState } from 'react';
+import type { ReactNode } from 'react';
 import { Settings } from 'lucide-react';
 
 import { AVATAR_URL, GITHUB_URL, LINKEDIN_URL } from '../data/constants';
@@ -8,7 +9,6 @@ import { CONTACT_TURNSTILE_ACTION } from '../lib/contactSecurity';
 import FabMenu from './FabMenu';
 import Footer from './Footer';
 import InfoDialog from './InfoDialog';
-import PortfolioSection from './PortfolioSection';
 import ScrollToTop from './ScrollToTop';
 import Toast from './Toast';
 import type { ToastState } from './Toast';
@@ -92,6 +92,7 @@ const loadTurnstile = () => {
 
 interface HomeExperienceProps {
   locale: Locale;
+  children: ReactNode;
 }
 
 const commandUrlMap = {
@@ -124,7 +125,7 @@ const TerrainFallback = ({ label }: { label: string }) => (
   />
 );
 
-const HomeExperience = ({ locale }: HomeExperienceProps) => {
+const HomeExperience = ({ children, locale }: HomeExperienceProps) => {
   const copy = locales[locale];
   const [isTerrainLoaded, setIsTerrainLoaded] = useState(false);
   const [loadingProgress, setLoadingProgress] = useState(0);
@@ -502,7 +503,7 @@ const HomeExperience = ({ locale }: HomeExperienceProps) => {
           onHintClick={showHintDialog}
         />
         <div id="portfolio-section" ref={portfolioSectionRef} tabIndex={-1}>
-          <PortfolioSection locale={locale} />
+          {children}
         </div>
       </main>
       <Footer locale={locale} onSubmitMessage={submitTypedMessage} />

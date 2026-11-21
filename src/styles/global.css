@@ -25,6 +25,7 @@ body {
   overflow: visible;
 }
 
+.project-cover,
 .swiper-slide {
   overflow: hidden;
   border-radius: 20px;

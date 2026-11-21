@@ -49,6 +49,7 @@ fonts, data, images, and entrance animations to finish, and inspect every screen
 Wait for populated list entries and completed route transitions before capture.
 For the student reader, use an original sample PDF and confirm that its canvas
 has rendered. Capture the public registration form in full, including its start
-button. Regenerate all six optimized variants whenever replacing a PNG so the gallery
-cannot serve an older screenshot. Keep captions and descriptions aligned with
-the captured screens in `src/data/projects.ts`.
+button. Regenerate all six optimized variants whenever replacing a PNG. Update
+the project's `coverSize` with the cover dimensions and set `size` for each
+slide with different dimensions. Keep captions, descriptions, and dimensions
+aligned with the captured screens in `src/data/projects.ts`.
