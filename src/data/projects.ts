@@ -311,16 +311,16 @@ export const projects: Project[] = [
   {
     title: 'Pura Pura Bike',
     description: {
-      en: 'A responsive community website for a cycling group, designed to present activities, collaborations, statistics, and contact information clearly.',
-      id: 'Situs komunitas responsif untuk grup bersepeda, dirancang untuk menampilkan aktivitas, kolaborasi, statistik, dan informasi kontak dengan jelas.',
+      en: 'A website for a cycling community in Bogor, featuring ride schedules, ride statistics, local cafe and bike shop partners, and a WhatsApp contact form.',
+      id: 'Situs komunitas sepeda di Bogor yang memuat jadwal gowes, statistik gowes, daftar kedai kopi dan bengkel mitra, serta formulir kontak WhatsApp.',
     },
-    technologies: ['Next.js', 'Tailwind CSS'],
+    technologies: ['Next.js', 'CSS'],
     images: [
-      { src: '/images/pura-pura-bike-1.png', alt: 'Pura Pura Bike Hero', priority: true },
-      { src: '/images/pura-pura-bike-2.png', alt: 'Pura Pura Bike Kegiatan Rutin' },
-      { src: '/images/pura-pura-bike-3.png', alt: 'Pura Pura Bike Kolaborator' },
-      { src: '/images/pura-pura-bike-4.png', alt: 'Pura Pura Bike Statistik Kami' },
-      { src: '/images/pura-pura-bike-5.png', alt: 'Pura Pura Bike Hubungi Kami' },
+      { src: '/images/pura-pura-bike-1.png', alt: 'Pura Pura Bike — Beranda', priority: true },
+      { src: '/images/pura-pura-bike-2.png', alt: 'Pura Pura Bike — Jadwal Rutin Gowes' },
+      { src: '/images/pura-pura-bike-3.png', alt: 'Pura Pura Bike — Arsip Insiden Jalanan' },
+      { src: '/images/pura-pura-bike-4.png', alt: 'Pura Pura Bike — Kedai Kopi & Bengkel Mitra' },
+      { src: '/images/pura-pura-bike-5.png', alt: 'Pura Pura Bike — Hubungi Kami' },
     ],
     link: {
       href: 'https://pura-pura-bike.vercel.app/',
