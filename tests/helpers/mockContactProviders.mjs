@@ -14,6 +14,10 @@ globalThis.fetch = async (input, init) => {
   }
   if (url.origin === 'https://api.resend.com') {
     const body = JSON.parse(init.body);
+    const requestId = new Headers(init.headers).get('Idempotency-Key');
+    if (!requestId || !body.text.includes(`Request ID: ${requestId}`)) {
+      return Response.json({ error: 'Missing delivery request ID' }, { status: 400 });
+    }
     if (body.text.includes('test-provider-failure')) {
       return Response.json({ error: 'mock delivery failed' }, { status: 500 });
     }

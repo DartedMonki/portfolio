@@ -8,6 +8,7 @@ import { after, before, test } from 'node:test';
 
 const root = fileURLToPath(new URL('../', import.meta.url));
 const cronSecret = 'integration-test-secret-at-least-16-characters';
+const requestIdPattern = /^[a-f0-9]{8}-(?:[a-f0-9]{4}-){3}[a-f0-9]{12}$/;
 const redisCommands = [];
 let redisMode = 'healthy';
 let baseUrl;
@@ -150,11 +151,12 @@ test('HEAD requests to the home page retain their normal 200 response', async ()
 });
 
 test('request middleware preserves IP responses and consistent request IDs', async () => {
-  const response = await fetch(`${baseUrl}/api/ip`, {
-    headers: { 'X-Request-Id': 'integration-ip-request' },
-  });
+  const headers = { 'X-Request-Id': 'integration-ip-request', 'X-Vercel-Id': 'test' };
+  const response = await fetch(`${baseUrl}/api/ip`, { headers });
+  const repeated = await fetch(`${baseUrl}/api/ip`, { headers });
   assert.equal(response.status, 200);
-  assert.equal(response.headers.get('X-Request-Id'), 'integration-ip-request');
+  assert.match(response.headers.get('X-Request-Id'), requestIdPattern);
+  assert.notEqual(response.headers.get('X-Request-Id'), repeated.headers.get('X-Request-Id'));
   assert.equal(response.headers.get('Cache-Control'), 'no-store');
   assert.equal(response.headers.get('X-Content-Type-Options'), 'nosniff');
   assert.equal(typeof (await response.json()).ipAddress, 'string');
@@ -196,7 +198,7 @@ test('verified messages pass all six token buckets and deliver through the mock 
   );
   assert.equal(response.status, 200, astroOutput);
   assert.deepEqual(await response.json(), { ok: true, deliveryStatus: 'delivered' });
-  assert.equal(response.headers.get('X-Request-Id'), 'integration-message-request');
+  assert.match(response.headers.get('X-Request-Id'), requestIdPattern);
   assert.match(response.headers.get('Set-Cookie'), /HttpOnly; Secure; SameSite=Strict/);
   const calls = redisCommands.filter((command) => String(command[0]).toUpperCase() === 'EVALSHA');
   assert.deepEqual(
@@ -210,6 +212,39 @@ test('body validation still runs before verified-client and message checks', asy
   assert.equal(response.status, 400);
 });
 
+test('oversized contact submissions are rejected before bot verification and delivery', async () => {
+  redisCommands.length = 0;
+  const response = await postMessage({
+    message: 'x'.repeat(8192),
+    turnstileToken: 'test-valid-token',
+  });
+  assert.equal(response.status, 413);
+  assert.deepEqual(await response.json(), { ok: false, error: 'Request body is too large' });
+  const calls = redisCommands.filter((command) => String(command[0]).toUpperCase() === 'EVALSHA');
+  assert.equal(calls.length, 3);
+});
+
+test('contact rejects oversized streamed bodies without a declared length', async () => {
+  const body = new ReadableStream({
+    start(controller) {
+      controller.enqueue(new TextEncoder().encode(' '.repeat(8193)));
+      controller.close();
+    },
+  });
+  const response = await fetch(`${baseUrl}/api/message`, {
+    method: 'POST',
+    headers: { Origin: baseUrl, 'Content-Type': 'application/json' },
+    body,
+    duplex: 'half',
+  });
+  assert.equal(response.status, 413);
+});
+
+test('contact requires the application/json media type', async () => {
+  const response = await postMessage({ message: 'test' }, { 'Content-Type': 'application/jsonp' });
+  assert.equal(response.status, 415);
+});
+
 test('invalid Turnstile tokens are rejected before post-verification buckets', async () => {
   redisCommands.length = 0;
   const response = await postMessage({ message: 'test', turnstileToken: 'test-invalid-token' });
@@ -220,14 +255,12 @@ test('invalid Turnstile tokens are rejected before post-verification buckets', a
 
 for (const turnstileToken of ['test-network-error', 'test-invalid-json']) {
   test(`Turnstile ${turnstileToken} fails closed with a logged 503`, async () => {
-    const requestId = `integration-${turnstileToken}`;
-    const response = await postMessage(
-      { message: 'test', turnstileToken },
-      { 'X-Request-Id': requestId },
-    );
+    const response = await postMessage({ message: 'test', turnstileToken });
     assert.equal(response.status, 503);
     assert.equal(response.headers.get('Retry-After'), '60');
-    assert.equal(response.headers.get('X-Request-Id'), requestId);
+    const requestId = response.headers.get('X-Request-Id');
+    assert.match(requestId, requestIdPattern);
+    assert.equal((await response.json()).requestId, requestId);
   });
 }
 
@@ -244,11 +277,8 @@ test('failed delivery is not falsely acknowledged as logged or delivered', async
 
 test('verified delivery quota is enforced after verification without invoking providers', async () => {
   redisMode = 'delivery-exhausted';
-  const requestId = 'integration-delivery-budget-request';
-  const response = await postMessage(
-    { message: 'test', turnstileToken: 'test-valid-token' },
-    { 'X-Request-Id': requestId },
-  );
+  const response = await postMessage({ message: 'test', turnstileToken: 'test-valid-token' });
+  const requestId = response.headers.get('X-Request-Id');
   assert.equal(response.status, 429);
   assert.ok(Number(response.headers.get('Retry-After')) <= 1200);
   assert.equal(
@@ -287,16 +317,12 @@ test('heartbeat rejects non-GET requests with 405', async () => {
 
 test('Redis outages return 503 and do not masquerade as quota exhaustion', async () => {
   redisMode = 'unavailable';
-  const response = await postMessage(
-    { message: 'test', turnstileToken: 'test-valid-token' },
-    { 'X-Request-Id': 'integration-outage-request' },
-  );
+  const response = await postMessage({ message: 'test', turnstileToken: 'test-valid-token' });
+  const requestId = response.headers.get('X-Request-Id');
   assert.equal(response.status, 503);
   assert.equal(response.headers.get('Retry-After'), '60');
   assert.equal(
-    astroOutput.includes(
-      '"event":"portfolio_message_rate_limited","requestId":"integration-outage-request"',
-    ),
+    astroOutput.includes(`"event":"portfolio_message_rate_limited","requestId":"${requestId}"`),
     false,
   );
 });

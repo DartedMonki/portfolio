@@ -19,8 +19,9 @@ import {
   type RateLimitBucket,
   type RateLimitCheck,
 } from '../../lib/messageRateLimit';
+import { readJsonRequest } from '../../lib/readJsonRequest';
 import { redis } from '../../lib/redis';
-import { getRequestId, getRequestIpAddress } from '../../lib/request';
+import { getRequestIpAddress } from '../../lib/request';
 
 export const prerender = false;
 
@@ -402,43 +403,24 @@ const checkRateLimits = async (
 
 const parseRequestBody = async (
   request: Request,
-): Promise<ParsedMessageRequest | { error: string }> => {
-  const contentType = request.headers.get('content-type') || '';
-  if (!contentType.toLowerCase().includes('application/json')) {
-    return { error: 'Expected application/json request body' };
+): Promise<ParsedMessageRequest | { error: string; status: number }> => {
+  const parsed = await readJsonRequest(request, MAX_REQUEST_BYTES);
+  if ('error' in parsed) return parsed;
+
+  const body = parsed.json;
+  if (!isRecord(body) || typeof body.message !== 'string') {
+    return { error: 'Message is required', status: 400 };
   }
 
-  const contentLength = Number(request.headers.get('content-length') || '0');
-  if (contentLength > MAX_REQUEST_BYTES) {
-    return { error: 'Request body is too large' };
+  if (
+    body.turnstileToken !== undefined &&
+    (typeof body.turnstileToken !== 'string' ||
+      body.turnstileToken.length > TURNSTILE_TOKEN_MAX_LENGTH)
+  ) {
+    return { error: 'Invalid verification token', status: 400 };
   }
 
-  const rawBody = await request.text();
-  if (new TextEncoder().encode(rawBody).length > MAX_REQUEST_BYTES) {
-    return { error: 'Request body is too large' };
-  }
-
-  try {
-    const body: unknown = JSON.parse(rawBody);
-    if (!isRecord(body) || typeof body.message !== 'string') {
-      return { error: 'Message is required' };
-    }
-
-    if (body.turnstileToken !== undefined && typeof body.turnstileToken !== 'string') {
-      return { error: 'Invalid verification token' };
-    }
-
-    if (
-      typeof body.turnstileToken === 'string' &&
-      body.turnstileToken.length > TURNSTILE_TOKEN_MAX_LENGTH
-    ) {
-      return { error: 'Invalid verification token' };
-    }
-
-    return { message: sanitizeMessage(body.message), turnstileToken: body.turnstileToken };
-  } catch {
-    return { error: 'Invalid JSON request body' };
-  }
+  return { message: sanitizeMessage(body.message), turnstileToken: body.turnstileToken };
 };
 
 const isTurnstileVerificationResponse = (
@@ -812,14 +794,14 @@ export const OPTIONS = (({ request }) => {
   });
 }) satisfies APIRoute;
 
-export const POST = (async ({ request }) => {
+export const POST = (async ({ request, locals: { requestId } }) => {
   const access = validateRequestAccess(request);
   if (!access.ok) {
     console.info(
       JSON.stringify({
         event: 'portfolio_message_access_rejected',
         error: access.error,
-        requestId: getRequestId(request),
+        requestId,
         origin: request.headers.get('origin') || 'missing',
         host: request.headers.get('host') || 'unknown',
       }),
@@ -830,7 +812,6 @@ export const POST = (async ({ request }) => {
   const clientIdentity = getClientIdentity(request);
   const clientHeaders = getClientHeaders(clientIdentity);
   const ipAddress = getRequestIpAddress(request);
-  const requestId = getRequestId(request);
   const preVerificationRateLimit = await checkRateLimits(
     requestId,
     ['global', 'ip', 'network'],
@@ -856,7 +837,12 @@ export const POST = (async ({ request }) => {
 
   const parsedBody = await parseRequestBody(request);
   if ('error' in parsedBody) {
-    return jsonResponse(request, { ok: false, error: parsedBody.error }, 400, clientHeaders);
+    return jsonResponse(
+      request,
+      { ok: false, error: parsedBody.error },
+      parsedBody.status,
+      clientHeaders,
+    );
   }
 
   const maxMessageLength = CONTACT_MAX_MESSAGE_LENGTH;

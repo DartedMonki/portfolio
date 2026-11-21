@@ -72,11 +72,3 @@ export const getRequestIpAddress = (request: Request) => {
 
   return getLocalFallback(request) || 'unknown';
 };
-
-export const getRequestId = (request: Request) => {
-  return (
-    request.headers.get('x-vercel-id') ||
-    request.headers.get('x-request-id') ||
-    globalThis.crypto.randomUUID()
-  );
-};
