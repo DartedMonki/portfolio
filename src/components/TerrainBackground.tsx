@@ -6,6 +6,7 @@ import type { ToastState } from './Toast';
 
 const TERRAIN_PREFERENCES_KEY = 'terrain_preferences';
 const TERRAIN_HORIZONTAL_FRUSTUM_PADDING_CHUNKS = 1;
+const MINIMUM_PREVIEW_CHUNKS = 4;
 
 interface TerrainConfig {
   chunkSize: number;
@@ -158,7 +159,7 @@ class TerrainNoiseGenerator {
       [0, -1, -1],
     ];
 
-    const basePermutation = Array.from({ length: 256 }, () => Math.floor(getRandomFloat() * 256));
+    const basePermutation = globalThis.crypto.getRandomValues(new Uint8Array(256));
     this.permutationTable = [...basePermutation, ...basePermutation];
     this.noiseCache = new Map();
   }
@@ -331,9 +332,7 @@ const TerrainBackground = ({
   );
   const currentSpeed = useRef(new THREE.Vector3());
   const lastChunkUpdatePosition = useRef(new THREE.Vector3());
-  const isInitializedRef = useRef(false);
   const chunkGenerationQueue = useRef<Array<[number, number]>>([]);
-  const generatedChunks = useRef(0);
   const starChunkGenerationQueue = useRef<Array<[number, number]>>([]);
   const starChunksMap = useRef(new Map<string, THREE.Points>());
   const sceneRef = useRef<THREE.Scene | null>(null);
@@ -574,15 +573,12 @@ const TerrainBackground = ({
     if (!containerRef.current || !preferencesLoaded) return undefined;
 
     if (prefersReducedMotion) {
-      isInitializedRef.current = true;
       setIsInitialized(true);
       setRenderUnavailableMessage('3D terrain disabled because reduced motion is enabled.');
       onLoadRef.current?.();
       return undefined;
     }
 
-    isInitializedRef.current = false;
-    generatedChunks.current = 0;
     setIsInitialized(false);
     setRenderUnavailableMessage(null);
 
@@ -603,7 +599,6 @@ const TerrainBackground = ({
         powerPreference: 'low-power',
       });
     } catch (error) {
-      isInitializedRef.current = true;
       setIsInitialized(true);
       setRenderUnavailableMessage(
         `3D terrain disabled because WebGL is unavailable: ${getErrorMessage(error)}`,
@@ -653,8 +648,12 @@ const TerrainBackground = ({
       return geometry;
     };
 
-    renderer.setSize(globalThis.innerWidth, globalThis.innerHeight);
-    renderer.setPixelRatio(terrainConfig.pixelRatio);
+    renderer.domElement.className = 'block h-full w-full';
+    renderer.setDrawingBufferSize(
+      globalThis.innerWidth,
+      globalThis.innerHeight,
+      terrainConfig.pixelRatio,
+    );
     container.appendChild(renderer.domElement);
     scene.fog = new THREE.Fog(0x000000, terrainConfig.fogNear, terrainConfig.fogFar);
 
@@ -676,7 +675,8 @@ const TerrainBackground = ({
     const textureCache = new Map<string, THREE.Texture>();
     const loader = new THREE.TextureLoader();
     const getChunkKey = (x: number, z: number): string => `${x},${z}`;
-    let initialTerrainChunksTarget = terrainConfig.initialChunks;
+    let generatedChunks = 0;
+    let hasShownPreview = false;
 
     const getTerrainChunkBounds = (position: THREE.Vector3) => {
       const cameraChunkX = Math.floor(position.x / terrainConfig.chunkSize);
@@ -698,15 +698,7 @@ const TerrainBackground = ({
       };
     };
 
-    const sortTerrainChunkQueue = (
-      centerChunkX: number,
-      centerChunkZ: number,
-      leadX: number,
-      leadZ: number,
-    ) => {
-      const priorityChunkX = centerChunkX + leadX;
-      const priorityChunkZ = centerChunkZ + leadZ;
-
+    const sortTerrainChunkQueue = (priorityChunkX: number, priorityChunkZ: number) => {
       chunkGenerationQueue.current.sort(([leftX, leftZ], [rightX, rightZ]) => {
         const leftDistance = (leftX - priorityChunkX) ** 2 + (leftZ - priorityChunkZ) ** 2;
         const rightDistance = (rightX - priorityChunkX) ** 2 + (rightZ - priorityChunkZ) ** 2;
@@ -729,16 +721,14 @@ const TerrainBackground = ({
         }
       }
 
-      initialTerrainChunksTarget = Math.max(
-        terrainConfig.initialChunks,
-        chunkGenerationQueue.current.length,
-      );
-
+      const focusZ = camera.position.z - terrainConfig.cameraDistance;
       sortTerrainChunkQueue(
-        terrainChunkBounds.cameraChunkX,
-        terrainChunkBounds.cameraChunkZ,
-        terrainChunkBounds.leadX,
-        terrainChunkBounds.leadZ,
+        camera.position.x / terrainConfig.chunkSize - 0.5,
+        focusZ / terrainConfig.chunkSize - 0.5,
+      );
+      return Math.min(
+        chunkGenerationQueue.current.length,
+        Math.max(MINIMUM_PREVIEW_CHUNKS, terrainConfig.initialChunks),
       );
     };
 
@@ -784,7 +774,7 @@ const TerrainBackground = ({
       );
       scene.add(chunk);
       terrainChunks.set(chunkKey, chunk);
-      generatedChunks.current += 1;
+      generatedChunks += 1;
       return chunk;
     };
 
@@ -798,12 +788,6 @@ const TerrainBackground = ({
       for (let index = 0; index < batchSize; index += 1) {
         const nextChunk = chunkGenerationQueue.current.shift();
         if (nextChunk) getTerrainChunk(nextChunk[0], nextChunk[1]);
-      }
-
-      if (!isInitializedRef.current && generatedChunks.current >= initialTerrainChunksTarget) {
-        isInitializedRef.current = true;
-        setIsInitialized(true);
-        onLoadRef.current?.();
       }
     };
 
@@ -822,10 +806,8 @@ const TerrainBackground = ({
       }
 
       sortTerrainChunkQueue(
-        terrainChunkBounds.cameraChunkX,
-        terrainChunkBounds.cameraChunkZ,
-        terrainChunkBounds.leadX,
-        terrainChunkBounds.leadZ,
+        terrainChunkBounds.cameraChunkX + terrainChunkBounds.leadX,
+        terrainChunkBounds.cameraChunkZ + terrainChunkBounds.leadZ,
       );
 
       terrainChunks.forEach((chunk, key) => {
@@ -842,7 +824,7 @@ const TerrainBackground = ({
         }
       });
 
-      if (generatedChunks.current % 10 === 0 && noiseGenerator.noiseCache.size > 5000) {
+      if (generatedChunks % 10 === 0 && noiseGenerator.noiseCache.size > 5000) {
         noiseGenerator.clearCache();
       }
     };
@@ -966,11 +948,11 @@ const TerrainBackground = ({
     const handleResize = () => {
       camera.aspect = globalThis.innerWidth / globalThis.innerHeight;
       camera.updateProjectionMatrix();
-      renderer.setSize(globalThis.innerWidth, globalThis.innerHeight);
+      renderer.setSize(globalThis.innerWidth, globalThis.innerHeight, false);
     };
 
     globalThis.addEventListener('resize', handleResize);
-    initializeChunkQueue();
+    const previewChunkTarget = initializeChunkQueue();
     initializeStarChunkQueue();
 
     const animate = () => {
@@ -995,6 +977,11 @@ const TerrainBackground = ({
       }
 
       renderer.render(scene, camera);
+      if (!hasShownPreview && generatedChunks >= previewChunkTarget) {
+        hasShownPreview = true;
+        setIsInitialized(true);
+        onLoadRef.current?.();
+      }
       animationFrameRef.current = globalThis.requestAnimationFrame(animate);
     };
 
@@ -1127,7 +1114,7 @@ const TerrainBackground = ({
             onClick={() => handleSettingsOpenChange(false)}
           />
           <section
-            className="absolute top-0 left-0 h-full w-4/5 max-w-87.5 overflow-y-auto bg-black/95 p-6 text-white shadow-2xl transition-transform duration-300 sm:w-87.5"
+            className="absolute top-0 left-0 h-full w-4/5 max-w-87.5 overflow-y-auto overscroll-y-contain bg-black/95 p-6 text-white shadow-2xl transition-transform duration-300 sm:w-87.5"
             aria-labelledby="terrain-settings-title"
           >
             <div className="mb-6 flex items-center justify-between gap-4">

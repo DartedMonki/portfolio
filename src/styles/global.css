@@ -4,6 +4,13 @@
 html {
   font-family: 'Didact Gothic', sans-serif;
   background: #000;
+  scrollbar-gutter: stable;
+}
+
+html:has(dialog:modal),
+html:has(dialog:modal) body {
+  overflow: hidden;
+  overscroll-behavior: none;
 }
 
 body {
@@ -25,6 +32,7 @@ body {
   overflow: visible;
 }
 
+.project-cover,
 .swiper-slide {
   overflow: hidden;
   border-radius: 20px;

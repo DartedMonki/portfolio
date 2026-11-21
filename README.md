@@ -4,7 +4,7 @@ Astro static site configured for Vercel's free deployment flow.
 
 ## Node Version
 
-This project targets Node 24.16 or newer within Node 24. The Astro lint parser requires that patch level. If you use `nvm`, run:
+This project targets Node 24.22.3 or newer within Node 24. This minimum includes the November 2026 Node.js security release. If you use `nvm`, run:
 
 ```sh
 nvm install
@@ -46,11 +46,11 @@ On Vercel (`VERCEL=1`), npm's `prebuild` hook normalizes `vercel.json` with the 
 
 ### Astro 7 Integration
 
-The project keeps Astro's built-in request pipeline and uses `src/middleware.ts` with the matched `routePattern` and `isPrerendered` context to add consistent request IDs plus no-store and security headers to dynamic API endpoints. API responses expose `X-Request-Id` for correlation with runtime logs. Endpoint authorization remains in the handlers, not in raw-path matching.
+The project keeps Astro's built-in request pipeline and uses `src/middleware.ts` with the matched `routePattern` and `isPrerendered` context to add no-store and security headers to dynamic API endpoints. Middleware generates a UUID for each API request and passes it through `Astro.locals`. The same ID appears in `X-Request-Id`, request logs, and the email delivery idempotency key.
 
 Middleware preserves Astro's request and rendering context, including dev routing and HMR. Request headers are accessed only for dynamic API endpoints, never for prerendered pages. Page GET/HEAD behavior and both locale routes are covered by integration tests.
 
-Astro's stable logger API uses JSON logs on Vercel and readable Node logs locally. The build uses Astro 7's Rust compiler, Vite 8 bundler, default queued rendering and HTML compression.
+Astro's stable logger API uses JSON logs on Vercel and readable Node logs locally. The build uses Astro 7's Rust compiler, Vite 8 bundler, default queued rendering, and HTML compression. The React integration compiles JSX and Fast Refresh through Oxc.
 
 Client JavaScript chunks use pinned `javascript-obfuscator@5.9.0`. Local identifiers and labels are obfuscated alongside base64-encoded string arrays. Public globals, property names and module interfaces stay intact. The offline `obfuscate()` API needs no account, API token or paid plan. Check the [upstream releases](https://github.com/javascript-obfuscator/javascript-obfuscator/releases) and run npm audit when upgrading.
 
@@ -60,7 +60,9 @@ Each chunk gets a deterministic source-derived seed and isolated generated names
 
 For production browser verification, install Chromium with `npx playwright install chromium`, build with `npm run build`, then run `npm run test:browser`. The test serves only built static files, applies `vercel.json` security headers, and checks both languages on desktop and mobile. It checks hydration, local image loading, dialogs, WebGL rendering and animation, and message submission responses. APIs and third-party requests, including Turnstile and the remote avatar, are mocked, so no real messages are sent or Redis quotas consumed.
 
-The public pages remain prerendered and the React experience keeps its existing hydration. Route caching is intentionally not enabled: the pages are already static, while visitor IPs, authenticated maintenance requests, messages, and quota decisions must never be shared between users. Sessions, Astro DB replacements, Markdown pipelines, and Hono are not needed for the current application.
+Astro prerenders project descriptions, links, and a responsive cover. Each React carousel hydrates as it approaches the viewport through `client:visible`. The carousel uses screenshot dimensions from the project data to size the active slide. The browser chooses an AVIF or WebP from `<picture>`, with the PNG reserved as the format fallback.
+
+The pages are prerendered. Dynamic API responses use `no-store` so visitor IPs, maintenance responses, messages, and quota decisions stay private.
 
 ### Generated Environment Types
 
@@ -100,6 +102,7 @@ Security behavior in production:
 | CORS                 | Only allowed origins receive `Access-Control-Allow-Origin`; preflight allows only `POST`             |
 | Missing origin       | Rejected outside local development                                                                   |
 | Host validation      | Requests to non-portfolio hosts, including unapproved preview URLs, are rejected                     |
+| Request body         | Requires `application/json` and caps both declared and streamed bodies at 8 KiB                      |
 | Bot verification     | Cloudflare Turnstile token, hostname, and action are verified server-side                            |
 | Distributed limiting | Upstash limits request traffic, verified deliveries, IP, IP network, client cookie, and message hash |
 | Limiter outage       | Fails closed with HTTP `503` and `Retry-After: 60` instead of accepting unprotected mail             |
@@ -113,7 +116,7 @@ www.dartedmonki.com
 
 Use `Managed (Recommended)` widget mode. The client renders it with `appearance: interaction-only`, so most visitors do not see anything, but Cloudflare can still show a fallback challenge when a browser cannot complete the silent private-token path.
 
-The repository defines the production CSP in `vercel.json`. Turnstile can load fallback assets from `https://challenges.cloudflare.com`, `https://fonts.googleapis.com`, and `https://fonts.gstatic.com`; keep those origins in CSP if you move security headers to Vercel or Cloudflare dashboard settings. If another CSP header is configured outside this repo, update or remove it too because browsers enforce all CSP headers they receive.
+The repository defines the production CSP in `vercel.json` and blocks inline event-handler attributes with `script-src-attr 'none'`. Turnstile can load fallback assets from `https://challenges.cloudflare.com`, `https://fonts.googleapis.com`, and `https://fonts.gstatic.com`. Keep those origins in CSP if you move security headers to Vercel or Cloudflare dashboard settings. Browser policies from multiple CSP headers apply together.
 
 Use Upstash Redis in the same Vercel region when possible to keep the contact endpoint fast. If Upstash or Turnstile environment variables are missing in production, `/api/message` fails closed instead of accepting unprotected traffic.
 

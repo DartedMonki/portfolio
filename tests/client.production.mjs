@@ -190,8 +190,16 @@ for (const viewport of [
 
           await page.locator('#terrain-settings-button').click();
           await page.locator('#terrain-settings-panel[open]').waitFor();
+          assert.equal(
+            await page.locator('html').evaluate((root) => getComputedStyle(root).overflowY),
+            'hidden',
+          );
           await page.keyboard.press('Escape');
           await page.locator('#terrain-settings-panel').waitFor({ state: 'detached' });
+          assert.notEqual(
+            await page.locator('html').evaluate((root) => getComputedStyle(root).overflowY),
+            'hidden',
+          );
           await page.locator('h1 button').click();
           await page.locator('#about-dialog[open]').waitFor();
           await page.keyboard.press('Escape');

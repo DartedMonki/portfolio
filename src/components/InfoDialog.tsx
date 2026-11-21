@@ -62,7 +62,7 @@ const InfoDialog = ({
           aria-label={closeLabel}
           onClick={onClose}
         />
-        <section className="relative h-dvh max-h-dvh w-full overflow-y-auto bg-white p-4 shadow-2xl sm:h-auto sm:max-h-[90dvh] sm:w-150 sm:rounded-[20px] sm:p-8">
+        <section className="relative h-dvh max-h-dvh w-full overflow-y-auto overscroll-y-contain bg-white p-4 shadow-2xl sm:h-auto sm:max-h-[90dvh] sm:w-150 sm:rounded-[20px] sm:p-8">
           <div className="sticky top-0 z-10 -mx-4 -mt-4 mb-4 flex items-start justify-between gap-4 bg-white px-4 pt-4 pb-2 sm:static sm:mx-0 sm:mt-0 sm:p-0">
             <h2 id={titleId} className="m-0 text-[1.75rem] font-semibold sm:text-[2rem]">
               {title}

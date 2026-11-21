@@ -5,7 +5,7 @@ export type ProjectLinkType = 'github' | 'website';
 export interface ProjectImage {
   src: string;
   alt: string;
-  priority?: boolean;
+  size?: [width: number, height: number];
 }
 
 export interface ProjectLink {
@@ -18,11 +18,10 @@ export interface Project {
   title: string;
   description: Record<Locale, string>;
   technologies: string[];
-  images: ProjectImage[];
+  coverSize: [width: number, height: number];
+  images: [ProjectImage, ...ProjectImage[]];
   link?: ProjectLink;
 }
-
-export type LocalizedProject = Omit<Project, 'description'> & { description: string };
 
 export const FIRST_PROJECT_IS_DARK = false;
 
@@ -34,11 +33,11 @@ export const projects: Project[] = [
       id: 'Platform pelatihan customer service multi-workspace dengan ujian role-play AI, penilaian pre-test dan post-test, coaching berbasis pengetahuan, serta pembuatan modul berbantuan AI. Setiap brand memiliki hostname, tema, dan konten sendiri, digunakan oleh HealthyGo dan Bekelin.',
     },
     technologies: ['Next.js', 'React', 'Tailwind CSS', 'Prisma', 'PostgreSQL', 'Anthropic API'],
+    coverSize: [1440, 900],
     images: [
       {
         src: '/images/cslatih-ai-chat.png',
         alt: 'CSLatih AI role-play exam chat for HealthyGo and Bekelin in mobile view with mock customer conversations',
-        priority: true,
       },
       {
         src: '/images/cslatih-healthygo-dashboard.png',
@@ -73,11 +72,11 @@ export const projects: Project[] = [
       id: 'Aplikasi mobile manajemen tenaga kerja lapangan untuk teknisi, mencakup work order instalasi dan pemeliharaan, detail lokasi, pelacakan aktivitas, serta pelaporan pekerjaan.',
     },
     technologies: ['Flutter', 'Dart', 'Riverpod', 'Go (Gin)', 'MySQL', 'Redis'],
+    coverSize: [780, 1688],
     images: [
       {
         src: '/images/asianet-swfm-1.png',
         alt: 'Asianet Smart WFM ongoing work orders with installation and troubleshooting tasks',
-        priority: true,
       },
       {
         src: '/images/asianet-swfm-2.png',
@@ -106,6 +105,7 @@ export const projects: Project[] = [
       'MySQL',
       'Redis',
     ],
+    coverSize: [1440, 900],
     images: [
       {
         src: '/images/asianet-wfm-dashboard-1.png',
@@ -128,6 +128,7 @@ export const projects: Project[] = [
       id: 'Aplikasi selfcare pelanggan internet GRADE+ untuk memantau koneksi, mengelola instalasi dan pesanan, melihat tagihan, melakukan pembayaran, serta menghubungi dukungan pelanggan.',
     },
     technologies: ['Flutter', 'Dart', 'Riverpod', 'Firebase', 'Go', 'gRPC', 'MariaDB', 'Kafka'],
+    coverSize: [780, 1688],
     images: [
       {
         src: '/images/gradeplus-app-1.png',
@@ -166,6 +167,7 @@ export const projects: Project[] = [
       'Kafka',
       'Keycloak',
     ],
+    coverSize: [1440, 900],
     images: [
       {
         src: '/images/gradeplus-dashboard-1.png',
@@ -188,11 +190,11 @@ export const projects: Project[] = [
       id: 'Platform pendidikan bilingual untuk sekolah, yayasan, dan keluarga, dengan pengalaman belajar B2B dan B2C yang dikelola melalui Payload CMS.',
     },
     technologies: ['Next.js', 'Payload CMS', 'Tailwind CSS'],
+    coverSize: [3110, 1902],
     images: [
       {
         src: '/images/prime-edu-center-1.png',
         alt: 'Prime Education Center bilingual landing page',
-        priority: true,
       },
       { src: '/images/prime-edu-center-2.png', alt: 'Prime Education Center B2B landing page' },
       { src: '/images/prime-edu-center-3.png', alt: 'Prime Education Center B2C landing page' },
@@ -223,8 +225,9 @@ export const projects: Project[] = [
       id: 'Platform pengiriman dan pelacakan paket yang dibangun dengan frontend Next.js, Go, dan PostgreSQL untuk mendukung operasional logistik yang andal.',
     },
     technologies: ['Next.js', 'Fiber (Go)', 'PostgreSQL'],
+    coverSize: [4320, 4320],
     images: [
-      { src: '/images/wingbox-home.png', alt: 'Wingbox Home Page', priority: true },
+      { src: '/images/wingbox-home.png', alt: 'Wingbox Home Page' },
       { src: '/images/wingbox-calculator.png', alt: 'Wingbox Calculator Interface' },
       { src: '/images/wingbox-track.png', alt: 'Wingbox Tracking System' },
       { src: '/images/wingbox-about.png', alt: 'About Wingbox' },
@@ -243,11 +246,11 @@ export const projects: Project[] = [
       id: 'Platform pendidikan GEP Media dan Alumni Tutorial (ALTO), dengan tryout UTBK privat dan publik, asesmen, reader ebook siswa, dashboard berbasis peran, serta absensi QR.',
     },
     technologies: ['Next.js', 'TypeScript', 'Tailwind CSS', 'NextAuth.js', 'Prisma', 'PostgreSQL'],
+    coverSize: [1440, 900],
     images: [
       {
         src: '/images/gepmedia-1.png',
         alt: 'GEP Media UTBK preparation landing page',
-        priority: true,
       },
       {
         src: '/images/gepmedia-2.png',
@@ -267,6 +270,7 @@ export const projects: Project[] = [
       },
       {
         src: '/images/gepmedia-tryout-public.png',
+        size: [1440, 1027],
         alt: 'GEP Media public tryout registration with school and participant details',
       },
       {
@@ -295,12 +299,13 @@ export const projects: Project[] = [
       id: 'Dashboard pengelolaan iklan dan kampanye yang menggunakan Next.js, Prisma, dan PostgreSQL untuk mengatur akun iklan serta alur kerja kampanye.',
     },
     technologies: ['Next.js', 'Tailwind CSS', 'Prisma', 'PostgreSQL'],
+    coverSize: [1893, 917],
     images: [
-      { src: '/images/pulse-ai-1.png', alt: 'Pulse AI Hero', priority: true },
-      { src: '/images/pulse-ai-2.png', alt: 'Pulse AI Dashboard' },
-      { src: '/images/pulse-ai-3.png', alt: 'Pulse AI Create Campaign' },
-      { src: '/images/pulse-ai-4.png', alt: 'Pulse AI Ad Accounts' },
-      { src: '/images/pulse-ai-5.png', alt: 'Pulse AI Ad Account Details' },
+      { src: '/images/pulse-ai-1.png', alt: 'Pulse AI Hero' },
+      { src: '/images/pulse-ai-2.png', size: [1892, 912], alt: 'Pulse AI Dashboard' },
+      { src: '/images/pulse-ai-3.png', size: [1917, 916], alt: 'Pulse AI Create Campaign' },
+      { src: '/images/pulse-ai-4.png', size: [1897, 915], alt: 'Pulse AI Ad Accounts' },
+      { src: '/images/pulse-ai-5.png', size: [1897, 915], alt: 'Pulse AI Ad Account Details' },
     ],
     link: {
       href: 'https://pulse.technovasolusi.id/',
@@ -311,16 +316,33 @@ export const projects: Project[] = [
   {
     title: 'Pura Pura Bike',
     description: {
-      en: 'A responsive community website for a cycling group, designed to present activities, collaborations, statistics, and contact information clearly.',
-      id: 'Situs komunitas responsif untuk grup bersepeda, dirancang untuk menampilkan aktivitas, kolaborasi, statistik, dan informasi kontak dengan jelas.',
+      en: 'A website for a cycling community in Bogor, featuring ride schedules, ride statistics, local cafe and bike shop partners, and a WhatsApp contact form.',
+      id: 'Situs komunitas sepeda di Bogor yang memuat jadwal gowes, statistik gowes, daftar kedai kopi dan bengkel mitra, serta formulir kontak WhatsApp.',
     },
-    technologies: ['Next.js', 'Tailwind CSS'],
+    technologies: ['Next.js', 'CSS'],
+    coverSize: [1440, 933],
     images: [
-      { src: '/images/pura-pura-bike-1.png', alt: 'Pura Pura Bike Hero', priority: true },
-      { src: '/images/pura-pura-bike-2.png', alt: 'Pura Pura Bike Kegiatan Rutin' },
-      { src: '/images/pura-pura-bike-3.png', alt: 'Pura Pura Bike Kolaborator' },
-      { src: '/images/pura-pura-bike-4.png', alt: 'Pura Pura Bike Statistik Kami' },
-      { src: '/images/pura-pura-bike-5.png', alt: 'Pura Pura Bike Hubungi Kami' },
+      { src: '/images/pura-pura-bike-1.png', alt: 'Pura Pura Bike — Beranda' },
+      {
+        src: '/images/pura-pura-bike-2.png',
+        size: [1440, 646],
+        alt: 'Pura Pura Bike — Jadwal Rutin Gowes',
+      },
+      {
+        src: '/images/pura-pura-bike-3.png',
+        size: [1440, 1098],
+        alt: 'Pura Pura Bike — Arsip Insiden Jalanan',
+      },
+      {
+        src: '/images/pura-pura-bike-4.png',
+        size: [1440, 945],
+        alt: 'Pura Pura Bike — Kedai Kopi & Bengkel Mitra',
+      },
+      {
+        src: '/images/pura-pura-bike-5.png',
+        size: [1440, 709],
+        alt: 'Pura Pura Bike — Hubungi Kami',
+      },
     ],
     link: {
       href: 'https://pura-pura-bike.vercel.app/',
@@ -335,12 +357,13 @@ export const projects: Project[] = [
       id: 'Dashboard berbasis Django untuk ringkasan pendapatan dan pelaporan operasional, didukung PostgreSQL dan antarmuka Bootstrap.',
     },
     technologies: ['Django', 'PostgreSQL', 'jQuery', 'Bootstrap'],
+    coverSize: [1918, 913],
     images: [
-      { src: '/images/rsms-1.png', alt: 'RSMS Hero', priority: true },
-      { src: '/images/rsms-2.png', alt: 'RSMS Dashboard 1' },
-      { src: '/images/rsms-3.png', alt: 'RSMS Dashboard 2' },
-      { src: '/images/rsms-4.png', alt: 'RSMS Revenue Summary 1' },
-      { src: '/images/rsms-5.png', alt: 'RSMS Revenue Summary 2' },
+      { src: '/images/rsms-1.png', alt: 'RSMS Hero' },
+      { src: '/images/rsms-2.png', size: [1897, 913], alt: 'RSMS Dashboard 1' },
+      { src: '/images/rsms-3.png', size: [1897, 913], alt: 'RSMS Dashboard 2' },
+      { src: '/images/rsms-4.png', size: [1896, 912], alt: 'RSMS Revenue Summary 1' },
+      { src: '/images/rsms-5.png', size: [1896, 913], alt: 'RSMS Revenue Summary 2' },
     ],
     link: {
       href: 'https://rsms.technovasolusi.id/',
@@ -355,18 +378,20 @@ export const projects: Project[] = [
       id: 'Situs profil perusahaan yang dibangun dengan JavaScript, HTML, dan Tailwind CSS untuk menampilkan layanan serta informasi bisnis.',
     },
     technologies: ['JavaScript', 'HTML', 'Tailwind CSS'],
+    coverSize: [1440, 836],
     images: [
       {
         src: '/images/ipvision-home.png',
         alt: 'Intermedia Prima Vision live homepage with licensing navigation and event highlights',
-        priority: true,
       },
       {
         src: '/images/ipvision-characters.png',
+        size: [1440, 1067],
         alt: 'Intermedia Prima Vision licensed character portfolio on the live website',
       },
       {
         src: '/images/ipvision-events.png',
+        size: [1440, 798],
         alt: 'Intermedia Prima Vision latest character experiences, live shows, and events',
       },
     ],
@@ -383,8 +408,9 @@ export const projects: Project[] = [
       id: 'Aplikasi pencatat hitungan berbasis Flutter dengan dukungan subcounter, pengaturan, dan tampilan mode gelap untuk kebutuhan produktivitas di perangkat mobile.',
     },
     technologies: ['Flutter', 'Dart'],
+    coverSize: [1080, 2220],
     images: [
-      { src: '/images/heetung-1.png', alt: 'Heetung Main Screen', priority: true },
+      { src: '/images/heetung-1.png', alt: 'Heetung Main Screen' },
       { src: '/images/heetung-2.png', alt: 'Heetung Settings Screen' },
       { src: '/images/heetung-3.png', alt: 'Heetung Subcounter Dialog' },
       { src: '/images/heetung-4.png', alt: 'Heetung Main Screen With Subcounter' },
@@ -398,8 +424,9 @@ export const projects: Project[] = [
       id: 'Prototipe aplikasi sosial berbasis Flutter yang mencakup layar feed utama, pesan langsung, notifikasi, dan pengaturan.',
     },
     technologies: ['Flutter', 'Dart'],
+    coverSize: [1080, 2220],
     images: [
-      { src: '/images/sembunyi-social-1.png', alt: 'Sembunyi Social Main Screen', priority: true },
+      { src: '/images/sembunyi-social-1.png', alt: 'Sembunyi Social Main Screen' },
       { src: '/images/sembunyi-social-2.png', alt: 'Sembunyi Social Direct Message Screen' },
       { src: '/images/sembunyi-social-3.png', alt: 'Sembunyi Social Notification Screen' },
       { src: '/images/sembunyi-social-4.png', alt: 'Sembunyi Social Settings Screen' },
@@ -412,6 +439,7 @@ export const projects: Project[] = [
       id: 'Proyek game Unity dan C# yang mengeksplorasi alur menu, scene dunia permainan, dan gameplay pertarungan bos.',
     },
     technologies: ['Unity', 'C#'],
+    coverSize: [1920, 1080],
     images: [
       { src: '/images/main-menu.png', alt: 'Castle Journey Main Menu' },
       { src: '/images/world-1.png', alt: 'Castle Journey World 1' },
