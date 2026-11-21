@@ -1,0 +1,53 @@
+---
+import type { Locale } from '../data/locales';
+import type { StoreLinkType } from '../data/projects';
+
+interface Props {
+  store: StoreLinkType;
+  href: string;
+  locale: Locale;
+  projectTitle: string;
+}
+
+const { store, href, locale, projectTitle } = Astro.props;
+const badges = {
+  'app-store': {
+    extension: 'svg',
+    width: 120,
+    height: 40,
+    en: { displayHeight: 44, compactHeight: 40, label: 'Download on the App Store' },
+    id: { displayHeight: 44, compactHeight: 40, label: 'Unduh di App Store' },
+  },
+  'google-play': {
+    extension: 'png',
+    width: 646,
+    height: 250,
+    en: { displayHeight: 66, compactHeight: 60, label: 'Get it on Google Play' },
+    id: { displayHeight: 58, compactHeight: 53, label: 'Dapatkan di Google Play' },
+  },
+};
+const badge = badges[store];
+const { displayHeight, compactHeight, label } = badge[locale];
+---
+
+<a
+  href={href}
+  class="inline-flex shrink-0 rounded-lg focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-600"
+  target="_blank"
+  rel="noopener noreferrer"
+  aria-label={`${label} — ${projectTitle}`}
+>
+  <img
+    src={`/images/store-badges/${store}-${locale}.${badge.extension}`}
+    alt={label}
+    width={badge.width}
+    height={badge.height}
+    class="block h-(--compact-badge-height) w-auto min-[360px]:h-(--badge-height)"
+    style={{
+      '--badge-height': `${displayHeight}px`,
+      '--compact-badge-height': `${compactHeight}px`,
+    }}
+    loading="lazy"
+    decoding="async"
+  />
+</a>

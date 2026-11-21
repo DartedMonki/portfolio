@@ -88,6 +88,7 @@ export interface LocaleCopy {
     messageSubmit: string;
     socialLabel: string;
     builtWith: string;
+    storeTrademarkCredits: string;
   };
 }
 
@@ -188,6 +189,8 @@ My tech stack includes React.js, Next.js, Vue.js for frontend development, and S
       messageSubmit: 'Send message',
       socialLabel: 'SOCIAL',
       builtWith: 'BUILT WITH ASTRO + THREE.JS',
+      storeTrademarkCredits:
+        'Apple and the Apple logo are trademarks of Apple Inc. App Store is a service mark of Apple Inc. Google Play and the Google Play logo are trademarks of Google LLC.',
     },
   },
   id: {
@@ -286,6 +289,8 @@ Stack yang sering saya gunakan meliputi React.js, Next.js, dan Vue.js untuk fron
       messageSubmit: 'Kirim pesan',
       socialLabel: 'SOSIAL',
       builtWith: 'DIBUAT DENGAN ASTRO + THREE.JS',
+      storeTrademarkCredits:
+        'Apple dan logo Apple adalah merek dagang Apple Inc. App Store adalah merek layanan Apple Inc. Google Play dan logo Google Play adalah merek dagang Google LLC.',
     },
   },
 } satisfies Record<Locale, LocaleCopy>;
